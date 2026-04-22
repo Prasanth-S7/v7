@@ -19,6 +19,7 @@
     "@v7/auth": "workspace:*",
     "@v7/env": "workspace:*",
     "@v7/ui": "workspace:*",
+    "axios": "^1.15.2",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "lucide-react": "^1.8.0",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@tanstack/react-router-devtools": "^1.166.13",
     "@tanstack/router-plugin": "^1.167.22",
+    "@types/axios": "^0.14.4",
     "@types/node": "^22.13.14",
     "@types/react": "^19.2.14",
     "@types/react-dom": "catalog:",

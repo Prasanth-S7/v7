@@ -13,16 +13,18 @@
     "@v7/auth": "workspace:*",
     "@v7/db": "workspace:*",
     "@v7/env": "workspace:*",
+    "axios": "^1.15.2",
     "better-auth": "catalog:",
     "cors": "^2.8.5",
     "dotenv": "catalog:",
     "express": "^5.1.0",
+    "langchain": "^1.3.3",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
     "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.1",
+    "@types/express": "^5.0.6",
     "@v7/config": "workspace:*",
     "tsdown": "^0.16.5",
     "typescript": "catalog:"
