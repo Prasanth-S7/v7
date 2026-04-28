@@ -10,9 +10,11 @@
     "start": "bun run dist/index.mjs"
   },
   "dependencies": {
+    "@langchain/langgraph": "^1.2.9",
     "@v7/auth": "workspace:*",
     "@v7/db": "workspace:*",
     "@v7/env": "workspace:*",
+    "@v7/llmclient": "workspace:*",
     "axios": "^1.15.2",
     "better-auth": "catalog:",
     "cors": "^2.8.5",

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { z } from "zod";
+import { workflow } from "@/agent/graph";
 
 export const chatRouter: ReturnType<typeof Router> = Router();
 
@@ -20,6 +21,11 @@ chatRouter.post("/", (req: Request, res: Response) => {
     }
 
     const { projectId, prompt } = parsed.data;
+
+    workflow.invoke({
+        projectId,
+        prompt
+    })
 
     return res.status(200).json({
         projectId,
