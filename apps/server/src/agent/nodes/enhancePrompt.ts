@@ -9,6 +9,6 @@ export async function enhancePromptNode (state: WorkflowState): Promise<Partial<
     console.log("Enhanced prompt:", state.enhancedPrompt);
     
     return {
-        enhancedPrompt: `Enhanced version of: ${state.prompt}`
+        enhancedPrompt: `Enhanced version of: ${state.prompt}`,
     }
 }
