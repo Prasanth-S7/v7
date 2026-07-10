@@ -12,8 +12,8 @@ export async function initProjectNode(state: WorkflowState): Promise<Partial<Wor
     const __dirname = path.dirname(__filename);
     const targetDir = path.resolve(__dirname, "../../../../shared", state.projectId);
 
-    // await mkdir(targetDir, { recursive: true });
-    // console.log("Ensured project directory exists at:", targetDir);
+    await mkdir(targetDir, { recursive: true });
+    console.log("Ensured project directory exists at:", targetDir);
 
     const ProjectInitSchema = z.object({
         executeCommands: z.array(z.object({
@@ -35,6 +35,7 @@ export async function initProjectNode(state: WorkflowState): Promise<Partial<Wor
 
         Return the exact commands needed to initialize the project in the shared project directory.
         Ensure the cwd values point to the project directory or the correct subdirectory for each command.
+        Do not use "cd" as a command. Use the cwd field to select the working directory instead.
     `;
 
     const structuredModel = model.withStructuredOutput(ProjectInitSchema);
@@ -49,7 +50,7 @@ export async function initProjectNode(state: WorkflowState): Promise<Partial<Wor
             parameters: {
                 command: item.command,
                 args: item.args ?? [],
-                cwd: item.cwd,
+                cwd: item.cwd ?? targetDir,
             },
             reason: item.reason,
         })),

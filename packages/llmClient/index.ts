@@ -1,5 +1,6 @@
 import { ChatOllama } from '@langchain/ollama';
 import { env } from '@v7/env/server';
+import { executeCommand } from './tools/executeCommands';
 import { readFile } from './tools/readFile';
 import { writeFile } from './tools/writeFile';
 
@@ -10,6 +11,7 @@ export const model = new ChatOllama({
 });
 
 const TOOLS = [
+    executeCommand,
     readFile,
     writeFile
 ]

@@ -1,6 +1,6 @@
 import type { WorkflowState } from "../graph";
 import { z } from "zod";
-import { model, toolModel } from "@v7/llmclient";
+import { model } from "@v7/llmclient";
 import { SYSTEM_PROMPTS } from "@/utils/prompts";
 
 
@@ -20,7 +20,7 @@ export async function planNode (state: WorkflowState): Promise<Partial<WorkflowS
     const structuredModel = model.withStructuredOutput(ToolCallResponseSchema);
     const response = await structuredModel.invoke(finalPrompt);
 
-    console.log("Planning node response with tool calls:", response);
+    console.log("Planning node response with tool calls:", JSON.stringify(response));
 
     return {
         buildStatus: "pending",

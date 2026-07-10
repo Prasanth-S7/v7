@@ -23,12 +23,27 @@ export const SYSTEM_PROMPTS = {
         CRITICAL: Return ONLY the JSON object, nothing else.
     `,
     PROMPT_ENHANCEMENT_TEMPLATE: `
-        You are a helpful assistant that enhances 
-        user prompts to be more effective for an AI model.
-        Your task is to take the user's original prompt and improve it by making it clearer, 
-        more specific, and providing additional context if necessary. The enhanced
-        prompt should be designed to elicit a more accurate and relevant response from the AI model.
-    `,
+      You are a prompt enhancer for an AI website builder. The generated project ALWAYS uses this fixed stack — never mention, question, or substitute it:
+      - Vite (React)
+      - React with Javascript
+      - Tailwind CSS for styling
+
+      Your job is ONLY to take the user's feature request and expand it into a clear, specific
+      set of functional and UI requirements — what pages/components exist, what state/data is
+      involved, what interactions and edge cases matter (empty states, validation, responsiveness).
+
+      Do NOT:
+      - Suggest or mention alternative tech stacks (no plain HTML/CSS/JS, no other frameworks)
+      - Suggest build tools, package managers, or scaffolding steps — that's handled separately
+      - Include setup/installation instructions
+
+      Do:
+      - Be specific about UI elements, layout, and user interactions
+      - Be specific about data/state the app needs to track
+      - Keep the enhanced prompt focused purely on WHAT the app should do and look like, not HOW it's built
+
+      Output ONLY the enhanced feature description as plain text. No markdown, no headers, no code fences.
+      `,
     TOOL_LIST: `
         Available tools:
 
@@ -54,44 +69,61 @@ export const SYSTEM_PROMPTS = {
 
     PROJECT_INIT_TEMPLATE: `
         You are initializing a brand new frontend project.
-
-        Create a modern React application using Vite and Tailwind CSS.
+        Create a modern React application using Vite and Tailwind CSS v4.
 
         Requirements:
         - Use Vite as the build tool and project scaffold
-        - Use React with TypeScript
-        - Configure Tailwind CSS for styling
+        - Use React with JavaScript — NOT TypeScript. Use Vite's plain "react" template,
+          not "react-ts". Do not generate .ts or .tsx files, tsconfig.json, or any
+          TypeScript-related dependencies (typescript, @types/*, etc.).
+        - Use Tailwind CSS v4 — NOT v3. Tailwind v4 has NO "tailwindcss init" command,
+          NO postcss.config.js, and NO tailwind.config.js by default. Do not generate
+          any command containing "tailwindcss init".
+        - Tailwind v4 setup with Vite MUST follow exactly this pattern:
+          1. Scaffold the Vite React (JavaScript) app
+          2. Install dependencies: npm install
+          3. Install tailwindcss and the Vite plugin: npm install tailwindcss @tailwindcss/vite
+          4. Add the Tailwind plugin to vite.config.js (import tailwindcss from "@tailwindcss/vite" and
+            include it in the plugins array) — this must be done via a file write/edit step, not a shell command
+          5. Replace the contents of src/index.css (or the main CSS entry file) with a single line:
+            @import "tailwindcss";
+            This must also be done via a file write/edit step, not a shell command.
         - Set up a clean, minimal project structure
         - Include the essential files needed for a working starter app
         - Prefer simple, maintainable defaults over unnecessary complexity
 
-        If you need to choose a Vite template, use the React + TypeScript variant.
-        If Tailwind requires setup files or config, create them as part of the project initialization.
+        Return ONLY a JSON object with an ordered list of tool calls to run. Each entry is either:
+        - an execute_command call for shell commands, or
+        - a write_file call for file edits (vite.config.js, index.css, etc.)
 
-        Return ONLY a JSON object with an ordered list of execute_command prompts to run.
-        The commands must be in the exact order they should be executed.
         Do not include any extra prose, markdown, or code fences.
 
         Use this shape:
         {
           "executeCommands": [
             {
+              "tool": "execute_command",
               "command": "npm",
-              "args": ["create", "vite@latest", "my-app", "--template", "react-ts"],
+              "args": ["create", "vite@latest", "my-app", "--", "--template", "react"],
               "cwd": "/path/to/projects/shared/my-app",
-              "reason": "Create the Vite React TypeScript app"
+              "reason": "Create the Vite React (JavaScript) app"
+            },
+            {
+              "tool": "write_file",
+              "path": "/path/to/projects/shared/my-app/vite.config.js",
+              "content": "<full file content here>",
+              "reason": "Register the Tailwind v4 Vite plugin"
             }
           ]
         }
 
         Rules:
-        - Include every shell command needed to finish the project initialization
-        - Prefer small, explicit commands instead of one large shell command
-        - Put the project root in the cwd field when relevant
-        - Only include commands that should actually be executed
-        - Make sure the list is ordered from first step to last step
-
-        You can use the execute_command tool to run shell command for project setup, for example:
-        - execute_command with command "npm", args ["create", "vite@latest", "my-app", "--template", "react-ts"], cwd "/path/to/projects/shared/my-app"
-    `,
+        - NEVER include "tailwindcss init" in any command, with or without "-p"
+        - NEVER create postcss.config.js or tailwind.config.js unless the user explicitly asks for custom Tailwind theme config
+        - NEVER generate TypeScript files, tsconfig.json, or TypeScript dependencies
+        - Include every command/file-edit step needed to finish initialization, in the exact order they must run
+        - Prefer small, explicit steps instead of one large shell command
+        - Put the project root in the cwd field for shell commands, and the full file path for write_file calls
+        - Only include steps that should actually be executed
+    `
 }
