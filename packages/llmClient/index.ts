@@ -2,6 +2,9 @@ import { ChatOpenRouter } from "@langchain/openrouter";
 import {
   readFile,
   writeFile,
+  deleteFile,
+  renameFile,
+  grepSearch,
   executeCommand,
 } from "./tools";
 import { env } from "@v7/env/server";
@@ -17,5 +20,8 @@ export const model = new ChatOpenRouter(
 export const tools = {
   readFile,
   writeFile,
+  deleteFile,
+  renameFile,
+  grepSearch,
   executeCommand,
 }
