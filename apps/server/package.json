@@ -10,6 +10,7 @@
     "start": "bun run dist/index.mjs"
   },
   "dependencies": {
+    "@langchain/core": "^1.2.2",
     "@langchain/langgraph": "^1.2.9",
     "@v7/auth": "workspace:*",
     "@v7/db": "workspace:*",
