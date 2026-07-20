@@ -2,6 +2,8 @@ import { ChatOpenRouter } from "@langchain/openrouter";
 import {
   readFile,
   writeFile,
+  updateFile,
+  replaceInFile,
   deleteFile,
   renameFile,
   grepSearch,
@@ -20,6 +22,8 @@ export const model = new ChatOpenRouter(
 export const tools = {
   readFile,
   writeFile,
+  updateFile,
+  replaceInFile,
   deleteFile,
   renameFile,
   grepSearch,
