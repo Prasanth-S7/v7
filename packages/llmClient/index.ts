@@ -1,19 +1,21 @@
-import { ChatOllama } from '@langchain/ollama';
-import { env } from '@v7/env/server';
-import { executeCommand } from './tools/executeCommands';
-import { readFile } from './tools/readFile';
-import { writeFile } from './tools/writeFile';
+import { ChatOpenRouter } from "@langchain/openrouter";
+import {
+  readFile,
+  writeFile,
+  executeCommand,
+} from "./tools";
+import { env } from "@v7/env/server";
 
-export const model = new ChatOllama({
-  baseUrl: env.OLLAMA_BASE_URL,
-  model: env.MODEL,
-  temperature: 0,
-});
+export const model = new ChatOpenRouter(
+  {
+    model: env.MODEL,
+    apiKey: env.API_KEY,
+    temperature: 0.8
+  }
+);
 
-const TOOLS = [
-    executeCommand,
-    readFile,
-    writeFile
-]
-
-export const toolModel = model.bindTools(TOOLS);
+export const tools = {
+  readFile,
+  writeFile,
+  executeCommand,
+}

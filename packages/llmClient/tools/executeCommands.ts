@@ -1,6 +1,7 @@
 import { tool } from "langchain";
 import { z } from "zod";
 import { spawn } from "child_process";
+import { parse } from "path";
 
 type ExecuteCommandInput = {
   command: string;
@@ -14,6 +15,8 @@ function runCommand({ command, args = [], cwd = process.cwd(), timeoutMs = 60_00
     let stdout = "";
     let stderr = "";
     let finished = false;
+
+    console.log('Execute runCommand tool🚨')
 
     const child = spawn(command, args, {
       cwd,
@@ -84,32 +87,23 @@ function runCommand({ command, args = [], cwd = process.cwd(), timeoutMs = 60_00
   });
 }
 
-export const executeCommand = tool(
-  async ({ command, args, cwd, timeoutMs }: ExecuteCommandInput) => {
-    try {
-      return await runCommand({ command, args, cwd, timeoutMs });
-    } catch (err: any) {
-      return JSON.stringify(
-        {
-          success: false,
-          command,
-          args,
-          cwd,
-          error: err?.message ?? "Unknown error running command",
+export function executeCommand(projectRoot: string) {
+    return tool(
+        async ({ command, args = [] }: { command: string; args?: string[] }) => {
+            const result = await runCommand({command, args, cwd: projectRoot});
+            const parsedResult = JSON.parse(result);
+            if (!parsedResult.success) {
+                return `ERROR: command failed - ${parsedResult.stderr || parsedResult.error}`;
+            }
+            return parsedResult.stdout || "Command succeeded";
         },
-        null,
-        2
-      );
-    }
-  },
-  {
-    name: "execute_command",
-    description: "Execute a shell command with optional arguments and return stdout, stderr, and exit status",
-    schema: z.object({
-      command: z.string().min(1).describe("The command to execute, for example: npm"),
-      args: z.array(z.string()).optional().describe("Arguments to pass to the command"),
-      cwd: z.string().optional().describe("Working directory to run the command in"),
-      timeoutMs: z.number().int().positive().optional().describe("Maximum time to wait before killing the command"),
-    }),
-  }
-);
+        {
+            name: "execute_command",
+            description: "Run a shell command in the project directory (e.g. installing a package). Never use for project scaffolding.",
+            schema: z.object({
+                command: z.string(),
+                args: z.array(z.string()).optional().default([]),
+            }),
+        }
+    );
+}
