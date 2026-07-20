@@ -104,24 +104,21 @@ export const SYSTEM_PROMPTS = {
             {
               "tool": "execute_command",
               "command": "npm",
-              "args": ["create", "vite@latest", "my-app", "--", "--template", "react"],
+              "args": ["create", "vite@latest", ".", "--", "--template", "react"],
               "cwd": "/path/to/projects/shared/my-app",
               "reason": "Create the Vite React (JavaScript) app"
             },
-            {
-              "tool": "write_file",
-              "path": "/path/to/projects/shared/my-app/vite.config.js",
-              "content": "<full file content here>",
-              "reason": "Register the Tailwind v4 Vite plugin"
-            }
           ]
         }
 
         Rules:
+        - Give the output as a single JSON object with an "executeCommands" array
         - NEVER include "tailwindcss init" in any command, with or without "-p"
         - NEVER create postcss.config.js or tailwind.config.js unless the user explicitly asks for custom Tailwind theme config
+        - NEVER try to edit any files here, this is just project initialization. File edits will be handled in a separate step.
         - NEVER generate TypeScript files, tsconfig.json, or TypeScript dependencies
-        - Include every command/file-edit step needed to finish initialization, in the exact order they must run
+        - NEVER try to start a dev server or run the app — this is just project initialization
+        - Include every command step needed to finish initialization, in the exact order they must run
         - Prefer small, explicit steps instead of one large shell command
         - Put the project root in the cwd field for shell commands, and the full file path for write_file calls
         - Only include steps that should actually be executed
