@@ -10,7 +10,8 @@ export const env = createEnv({
     CORS_ORIGIN: z.url(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
     OLLAMA_BASE_URL: z.url().default("http://localhost:11434"),
-    MODEL: z.string()
+    MODEL: z.string(),
+    API_KEY: z.string().min(1),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
