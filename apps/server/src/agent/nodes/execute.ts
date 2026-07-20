@@ -1,5 +1,6 @@
 import type { WorkflowState } from "../graph";
 import { spawn } from "child_process";
+import { mkdir, writeFile as writeFileToDisk } from "fs/promises";
 import path from "path";
 
 type ToolCall = {
@@ -96,6 +97,29 @@ function runCommand(command: string, args: string[] = [], cwd = process.cwd(), t
     });
 }
 
+async function runWriteFile(
+    filePath: string,
+    content: string,
+    cwd = process.cwd(),
+    timeoutMs = 60_000
+) {
+    const targetPath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
+    await mkdir(path.dirname(targetPath), { recursive: true });
+    await writeFileToDisk(targetPath, content, "utf-8");
+
+    return {
+        success: true,
+        command: "write_file",
+        args: [targetPath, content],
+        cwd,
+        timeoutMs,
+        exitCode: 0,
+        stdout: "",
+        stderr: "",
+        targetPath,
+    };
+}
+
 export async function executeNode (state: WorkflowState): Promise<Partial<WorkflowState>> {
     console.log("Reaches execute Node")
     const toolCalls = (state.toolCalls ?? []) as ToolCall[];
@@ -120,6 +144,49 @@ export async function executeNode (state: WorkflowState): Promise<Partial<Workfl
             ? parameters.cwd
             : currentCwd;
         const timeoutMs = typeof parameters.timeoutMs === "number" ? parameters.timeoutMs : 60_000;
+
+        if (command === "write_file") {
+            const filePath = args[0];
+            const content = args[1];
+
+            if (!filePath || typeof filePath !== "string") {
+                const result = {
+                    success: false,
+                    command,
+                    args,
+                    cwd,
+                    timeoutMs,
+                    error: "write_file requires a target file path",
+                    stdout: "",
+                    stderr: "",
+                };
+                results.push(result);
+                console.error("Command failed:", result);
+                throw new Error("Command failed: write_file requires a target file path");
+            }
+
+            if (typeof content !== "string") {
+                const result = {
+                    success: false,
+                    command,
+                    args,
+                    cwd,
+                    timeoutMs,
+                    error: "write_file requires file contents",
+                    stdout: "",
+                    stderr: "",
+                };
+                results.push(result);
+                console.error("Command failed:", result);
+                throw new Error("Command failed: write_file requires file contents");
+            }
+
+            console.log("Writing file:", { filePath, cwd, timeoutMs, reason: call.reason });
+            const result = await runWriteFile(filePath, content, cwd, timeoutMs);
+            results.push(result);
+            console.log("File write completed:", result.targetPath);
+            continue;
+        }
 
         if (command === "cd") {
             const target = args[0];
@@ -170,7 +237,7 @@ export async function executeNode (state: WorkflowState): Promise<Partial<Workfl
     console.log("Execution results:", results);
 
     return {
-        fixAttempts: state.fixAttempts + 1,
+        fixAttempts: (state.fixAttempts ?? 0) + 1,
         changeSummary: {
             filesChanged: [],
             linesAdded: 0,
