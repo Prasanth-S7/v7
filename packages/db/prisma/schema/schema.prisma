@@ -8,3 +8,10 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Project {
+  id       String   @id @default(uuid())
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
