@@ -1,11 +1,15 @@
 import { createKafkaClient } from "@v7/kafka";
 import { Topics } from "@v7/kafka/topics";
 import type { EachMessagePayload } from "kafkajs";
-import { cp, mkdir, mkdtemp, readdir, rm, writeFile } from "fs/promises";
+import { mkdir, rm, writeFile } from "fs/promises";
 import { fileURLToPath } from "url";
-import os from "os";
 import path from "path";
-import { spawn } from "child_process";
+import {
+	S3Client,
+	ListObjectsV2Command,
+	GetObjectCommand,
+} from "@aws-sdk/client-s3";
+import { env } from "@v7/env/shared";
 
 const kafka = createKafkaClient("workspace-service");
 
@@ -22,65 +26,75 @@ await consumer.subscribe({
     topic: Topics.CREATE_PROJECT,
 });
 
-const templateArchiveUrl =
-    process.env.PROJECT_TEMPLATE_ZIP_URL ??
-    process.env.PROJECT_TEMPLATE_URL ??
-    process.env.R2_TEMPLATE_URL;
+const s3 = new S3Client({
+	region: "auto",
+	endpoint: env.R2_ENDPOINT,
+	credentials: {
+		accessKeyId: env.ACCESS_KEY_ID,
+		secretAccessKey: env.SECRET_ACCESS_KEY,
+	},
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectsRoot = path.resolve(__dirname, "../projects");
 
-function runCommand(command: string, args: string[]) {
-    return new Promise<void>((resolve, reject) => {
-        const child = spawn(command, args, {
-            stdio: "inherit",
-        });
-
-        child.on("error", reject);
-        child.on("close", (code) => {
-            if (code === 0) {
-                resolve();
-                return;
-            }
-
-            reject(new Error(`${command} exited with code ${code ?? "unknown"}`));
-        });
-    });
+function normalizePrefix(prefix: string) {
+    const trimmed = prefix.trim().replace(/^\/+/, "").replace(/\/+$/, "");
+    return trimmed.length > 0 ? `${trimmed}/` : "";
 }
 
-async function extractTemplateArchive(archivePath: string, targetDir: string) {
-    const extractDir = await mkdtemp(path.join(os.tmpdir(), "v7-project-template-"));
+async function downloadS3Folder(bucket: string, prefix: string, targetDir: string) {
+    const normalizedPrefix = normalizePrefix(prefix);
+    let continuationToken: string | undefined;
 
-    try {
-        await runCommand("unzip", ["-oq", archivePath, "-d", extractDir]);
+    await mkdir(targetDir, { recursive: true });
 
-        const topLevelEntries = await readdir(extractDir, { withFileTypes: true });
-        const sourceDir =
-            topLevelEntries.length === 1 && topLevelEntries[0]?.isDirectory()
-                ? path.join(extractDir, topLevelEntries[0].name)
-                : extractDir;
+    do {
+        const listed = await s3.send(new ListObjectsV2Command({
+            Bucket: bucket,
+            Prefix: normalizedPrefix,
+            ContinuationToken: continuationToken,
+        }));
 
-        const entries = await readdir(sourceDir, { withFileTypes: true });
-        await mkdir(targetDir, { recursive: true });
+        continuationToken = listed.NextContinuationToken;
 
-        for (const entry of entries) {
-            const sourcePath = path.join(sourceDir, entry.name);
-            const destinationPath = path.join(targetDir, entry.name);
-            await cp(sourcePath, destinationPath, { recursive: true, force: true });
+        for (const item of listed.Contents ?? []) {
+            const key = item.Key;
+            if (!key || key.endsWith("/")) {
+                continue;
+            }
+
+            const relativePath = key.startsWith(normalizedPrefix)
+                ? key.slice(normalizedPrefix.length)
+                : key;
+
+            if (!relativePath) {
+                continue;
+            }
+
+            const destinationPath = path.join(targetDir, relativePath);
+            await mkdir(path.dirname(destinationPath), { recursive: true });
+
+            const object = await s3.send(new GetObjectCommand({
+                Bucket: bucket,
+                Key: key,
+            }));
+
+            const body = object.Body as { transformToByteArray?: () => Promise<Uint8Array> } | undefined;
+            if (!body?.transformToByteArray) {
+                throw new Error(`Failed to read S3 object body for ${key}`);
+            }
+
+            const bytes = await body.transformToByteArray();
+            await writeFile(destinationPath, bytes);
         }
-    } finally {
-        await rm(extractDir, { recursive: true, force: true });
-    }
+    } while (continuationToken);
 }
 
 const handleProjectCreate = async ({ topic, message }: EachMessagePayload) => {
     if (!message.value) {
         throw new Error("Received empty project creation message");
-    }
-
-    if (!templateArchiveUrl) {
-        throw new Error("Missing project template archive URL. Set PROJECT_TEMPLATE_ZIP_URL, PROJECT_TEMPLATE_URL, or R2_TEMPLATE_URL.");
     }
 
     const { projectId } = JSON.parse(message.value.toString()) as { projectId?: string };
@@ -93,38 +107,22 @@ const handleProjectCreate = async ({ topic, message }: EachMessagePayload) => {
 
     console.log(`Received message on topic ${topic}:`, { projectId, targetDir });
 
-    const response = await fetch(templateArchiveUrl);
-    if (!response.ok || !response.body) {
-        throw new Error(`Failed to fetch project template archive: ${response.status} ${response.statusText}`);
-    }
+    await rm(targetDir, { recursive: true, force: true });
+    await downloadS3Folder(env.TEMPLATE_BUCKET_NAME, env.TEMPLATE_FOLDER_PREFIX, targetDir);
 
-    const archiveDir = await mkdtemp(path.join(os.tmpdir(), "v7-project-archive-"));
-    const archivePath = path.join(archiveDir, "template.zip");
+    await producer.send({
+        topic: Topics.PROJECT_CREATED,
+        messages: [
+            {
+                value: JSON.stringify({
+                    projectId,
+                    path: targetDir,
+                }),
+            },
+        ],
+    });
 
-    try {
-        const archiveBytes = await response.arrayBuffer();
-        await writeFile(archivePath, new Uint8Array(archiveBytes));
-
-        await rm(targetDir, { recursive: true, force: true });
-        await mkdir(targetDir, { recursive: true });
-        await extractTemplateArchive(archivePath, targetDir);
-
-        await producer.send({
-            topic: Topics.PROJECT_CREATED,
-            messages: [
-                {
-                    value: JSON.stringify({
-                        projectId,
-                        path: targetDir,
-                    }),
-                },
-            ],
-        });
-
-        console.log("Project created successfully:", { projectId, targetDir });
-    } finally {
-        await rm(archiveDir, { recursive: true, force: true });
-    }
+    console.log("Project created successfully:", { projectId, targetDir });
 };
 
 await consumer.run({

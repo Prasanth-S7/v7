@@ -6,7 +6,8 @@
   "exports": {
     "./server": "./src/server.ts",
     "./web": "./src/web.ts",
-    "./http": "./src/http.ts"
+    "./http": "./src/http.ts",
+    "./shared": "./src/shared.ts"
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.1",

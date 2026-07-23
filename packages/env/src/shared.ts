@@ -4,7 +4,11 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    HTTP_SERVER_PORT: z.string().default("3000"),
+    R2_ENDPOINT: z.string(),
+    ACCESS_KEY_ID: z.string(),
+    SECRET_ACCESS_KEY: z.string(),
+    TEMPLATE_BUCKET_NAME: z.string().min(1),
+    TEMPLATE_FOLDER_PREFIX: z.string().min(1),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

@@ -22,11 +22,11 @@ const createConnection = async () => {
 }
 createConnection();
 
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
 })
 
-app.use('/project', project);
+app.use('/api/project', project);
 
 app.listen(env.HTTP_SERVER_PORT, () => {
     console.log(`HTTP server is running on http://localhost:${env.HTTP_SERVER_PORT}`)
