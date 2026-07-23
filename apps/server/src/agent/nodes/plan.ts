@@ -122,6 +122,11 @@ export async function planNode(state: WorkflowState): Promise<Partial<WorkflowSt
         tools.readFile(projectRoot),
         tools.writeFile(projectRoot),
         tools.executeCommand(projectRoot),
+        tools.deleteFile(projectRoot),
+        tools.renameFile(projectRoot),
+        tools.grepSearch(projectRoot),
+        tools.replaceInFile(projectRoot),
+        tools.updateFile(projectRoot),
     ];
 
     const toolModel = model.bindTools(boundTools);
