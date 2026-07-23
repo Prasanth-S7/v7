@@ -1,0 +1,21 @@
+{
+  "name": "@v7/kafka",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "kafkajs": "^2.2.4"
+  }
+}
