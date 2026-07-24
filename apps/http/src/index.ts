@@ -3,6 +3,8 @@ import cors from 'cors'
 import { project } from './routes/project';
 import { env } from '@v7/env/http';
 import { createKafkaClient } from '@v7/kafka';
+import { Topics } from '@v7/kafka/topics';
+import { run } from './kafka/run';
 
 const app = express();
 
@@ -10,6 +12,17 @@ app.use(cors());
 
 const kafka = createKafkaClient("project-service");
 export const producer = kafka.producer();
+export const consumer = kafka.consumer({
+    groupId: "project-service-group"
+});
+
+await consumer.connect();
+
+await consumer.subscribe({
+    topic: Topics.PROJECT_CREATED,
+});
+
+run();
 
 const createConnection = async () => {
     try {
