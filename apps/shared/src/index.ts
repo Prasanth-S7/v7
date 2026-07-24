@@ -117,6 +117,7 @@ const handleProjectCreate = async ({ topic, message }: EachMessagePayload) => {
                 value: JSON.stringify({
                     projectId,
                     path: targetDir,
+                    success: true
                 }),
             },
         ],
