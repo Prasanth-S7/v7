@@ -2,13 +2,18 @@ import { tool } from "langchain";
 import { z } from "zod";
 import fs from "fs/promises";
 import path from "path";
-import { assertInsideRoot } from "../helpers/guardRail";
+import {
+    assertInsideRoot,
+    resolveWorkspacePath,
+    resolveWorkspaceRoot,
+} from "../helpers/guardRail";
 
 export function updateFile(projectRoot: string) {
     return tool(
         async ({ filePath, content }: { filePath: string; content: string }) => {
-            const absolutePath = path.resolve(projectRoot, filePath);
-            assertInsideRoot(absolutePath, projectRoot);
+            const workspaceRoot = resolveWorkspaceRoot(projectRoot);
+            const absolutePath = resolveWorkspacePath(workspaceRoot, filePath);
+            assertInsideRoot(absolutePath, workspaceRoot);
 
             await fs.mkdir(path.dirname(absolutePath), { recursive: true });
             await fs.writeFile(absolutePath, content, "utf-8");

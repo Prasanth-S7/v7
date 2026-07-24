@@ -1,14 +1,18 @@
 import { tool } from "langchain";
 import { z } from "zod";
 import fs from "fs/promises";
-import path from "path";
-import { assertInsideRoot } from "../helpers/guardRail";
+import {
+    assertInsideRoot,
+    resolveWorkspacePath,
+    resolveWorkspaceRoot,
+} from "../helpers/guardRail";
 
 export function deleteFile(projectRoot: string) {
     return tool(
         async ({ filePath }: { filePath: string }) => {
-            const absolutePath = path.resolve(projectRoot, filePath);
-            assertInsideRoot(absolutePath, projectRoot);
+            const workspaceRoot = resolveWorkspaceRoot(projectRoot);
+            const absolutePath = resolveWorkspacePath(workspaceRoot, filePath);
+            assertInsideRoot(absolutePath, workspaceRoot);
 
             try {
                 await fs.unlink(absolutePath);

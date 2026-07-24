@@ -9,6 +9,7 @@ export const env = createEnv({
     SECRET_ACCESS_KEY: z.string(),
     TEMPLATE_BUCKET_NAME: z.string().min(1),
     TEMPLATE_FOLDER_PREFIX: z.string().min(1),
+    SHARED_DIR: z.string().default("/home/prasanth/shared"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

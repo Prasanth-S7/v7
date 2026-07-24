@@ -1,6 +1,7 @@
 import { tool } from "langchain";
 import { z } from "zod";
 import { spawn } from "child_process";
+import { resolveWorkspaceRoot } from "../helpers/guardRail";
 
 type GrepSearchInput = {
     query: string;
@@ -109,12 +110,13 @@ export function grepSearch(projectRoot: string) {
             caseSensitive = true,
             maxResults = 50,
         }: GrepSearchInput) => {
+            const workspaceRoot = resolveWorkspaceRoot(projectRoot);
             const result = await runGrepSearch({
                 query,
                 filePattern,
                 caseSensitive,
                 maxResults,
-                cwd: projectRoot,
+                cwd: workspaceRoot,
             });
 
             const parsedResult = JSON.parse(result);

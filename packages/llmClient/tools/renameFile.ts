@@ -2,16 +2,21 @@ import { tool } from "langchain";
 import { z } from "zod";
 import fs from "fs/promises";
 import path from "path";
-import { assertInsideRoot } from "../helpers/guardRail";
+import {
+    assertInsideRoot,
+    resolveWorkspacePath,
+    resolveWorkspaceRoot,
+} from "../helpers/guardRail";
 
 export function renameFile(projectRoot: string) {
     return tool(
         async ({ fromPath, toPath }: { fromPath: string; toPath: string }) => {
-            const absoluteFromPath = path.resolve(projectRoot, fromPath);
-            const absoluteToPath = path.resolve(projectRoot, toPath);
+            const workspaceRoot = resolveWorkspaceRoot(projectRoot);
+            const absoluteFromPath = resolveWorkspacePath(workspaceRoot, fromPath);
+            const absoluteToPath = resolveWorkspacePath(workspaceRoot, toPath);
 
-            assertInsideRoot(absoluteFromPath, projectRoot);
-            assertInsideRoot(absoluteToPath, projectRoot);
+            assertInsideRoot(absoluteFromPath, workspaceRoot);
+            assertInsideRoot(absoluteToPath, workspaceRoot);
 
             try {
                 await fs.mkdir(path.dirname(absoluteToPath), { recursive: true });

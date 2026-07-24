@@ -7,6 +7,7 @@ export const chat: ReturnType<typeof Router> = Router();
 
 chat.post("/:projectId", async (req, res) => {
     try{
+        console.log(req.body)
         const { prompt } = req.body;
         if(!prompt){
             return res.json({
@@ -25,13 +26,16 @@ chat.post("/:projectId", async (req, res) => {
             })
         }
         await producer.send({
-            topic: Topics.CREATE_PROJECT,
+            topic: Topics.PROMPT,
             messages: [
                 {   
                     key: projectId,
                     value: JSON.stringify({ prompt: prompt })
                 }
             ]
+        })
+        return res.json({
+            msg: "Running the workflow....."
         })
     }
     catch(error){

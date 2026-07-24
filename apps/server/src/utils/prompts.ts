@@ -105,7 +105,7 @@ export const SYSTEM_PROMPTS = {
               "tool": "execute_command",
               "command": "npm",
               "args": ["create", "vite@latest", ".", "--", "--template", "react"],
-              "cwd": "/path/to/projects/shared/my-app",
+              "cwd": "/absolute/path/to/the/shared/workspace/my-app",
               "reason": "Create the Vite React (JavaScript) app"
             },
           ]

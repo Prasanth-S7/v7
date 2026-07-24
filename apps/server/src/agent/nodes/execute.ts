@@ -2,6 +2,11 @@ import type { WorkflowState } from "../graph";
 import { spawn } from "child_process";
 import { mkdir, writeFile as writeFileToDisk } from "fs/promises";
 import path from "path";
+import {
+    assertInsideRoot,
+    resolveWorkspacePath,
+    resolveWorkspaceRoot,
+} from "@v7/env/sharedDir";
 
 type ToolCall = {
     tool: string;
@@ -100,10 +105,14 @@ function runCommand(command: string, args: string[] = [], cwd = process.cwd(), t
 async function runWriteFile(
     filePath: string,
     content: string,
+    workspaceRoot: string,
     cwd = process.cwd(),
     timeoutMs = 60_000
 ) {
-    const targetPath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
+    const targetPath = path.isAbsolute(filePath)
+        ? path.resolve(filePath)
+        : path.resolve(cwd, filePath);
+    assertInsideRoot(targetPath, workspaceRoot);
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFileToDisk(targetPath, content, "utf-8");
 
@@ -124,7 +133,8 @@ export async function executeNode (state: WorkflowState): Promise<Partial<Workfl
     console.log("Reaches execute Node")
     const toolCalls = (state.toolCalls ?? []) as ToolCall[];
     const commandCalls = toolCalls.filter((call) => call.tool === "execute_command");
-    let currentCwd = process.cwd();
+    const workspaceRoot = resolveWorkspaceRoot(state.projectContext.rootPath);
+    let currentCwd = workspaceRoot;
 
     const results = [];
     for (const call of commandCalls) {
@@ -140,9 +150,10 @@ export async function executeNode (state: WorkflowState): Promise<Partial<Workfl
         }
 
         const args = Array.isArray(parameters.args) ? parameters.args : [];
-        const cwd = typeof parameters.cwd === "string" && parameters.cwd.length > 0
+        const cwdCandidate = typeof parameters.cwd === "string" && parameters.cwd.length > 0
             ? parameters.cwd
             : currentCwd;
+        const cwd = resolveWorkspacePath(workspaceRoot, path.resolve(currentCwd, cwdCandidate));
         const timeoutMs = typeof parameters.timeoutMs === "number" ? parameters.timeoutMs : 60_000;
 
         if (command === "write_file") {
@@ -182,7 +193,7 @@ export async function executeNode (state: WorkflowState): Promise<Partial<Workfl
             }
 
             console.log("Writing file:", { filePath, cwd, timeoutMs, reason: call.reason });
-            const result = await runWriteFile(filePath, content, cwd, timeoutMs);
+            const result = await runWriteFile(filePath, content, workspaceRoot, cwd, timeoutMs);
             results.push(result);
             console.log("File write completed:", result.targetPath);
             continue;
@@ -206,7 +217,7 @@ export async function executeNode (state: WorkflowState): Promise<Partial<Workfl
                 throw new Error("Command failed: cd requires a target directory");
             }
 
-            currentCwd = path.resolve(cwd, target);
+            currentCwd = resolveWorkspacePath(workspaceRoot, path.resolve(cwd, target));
             const result = {
                 success: true,
                 command,

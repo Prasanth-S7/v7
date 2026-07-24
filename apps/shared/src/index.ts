@@ -2,7 +2,6 @@ import { createKafkaClient } from "@v7/kafka";
 import { Topics } from "@v7/kafka/topics";
 import type { EachMessagePayload } from "kafkajs";
 import { mkdir, rm, writeFile } from "fs/promises";
-import { fileURLToPath } from "url";
 import path from "path";
 import {
 	S3Client,
@@ -10,6 +9,7 @@ import {
 	GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { env } from "@v7/env/shared";
+import { getProjectDir } from "@v7/env/sharedDir";
 
 const kafka = createKafkaClient("workspace-service");
 
@@ -34,10 +34,6 @@ const s3 = new S3Client({
 		secretAccessKey: env.SECRET_ACCESS_KEY,
 	},
 });
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const projectsRoot = path.resolve(__dirname, "../projects");
 
 function normalizePrefix(prefix: string) {
     const trimmed = prefix.trim().replace(/^\/+/, "").replace(/\/+$/, "");
@@ -103,7 +99,7 @@ const handleProjectCreate = async ({ topic, message }: EachMessagePayload) => {
         throw new Error("Project creation message did not include a projectId");
     }
 
-    const targetDir = path.join(projectsRoot, projectId);
+    const targetDir = getProjectDir(projectId);
 
     console.log(`Received message on topic ${topic}:`, { projectId, targetDir });
 

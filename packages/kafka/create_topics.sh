@@ -9,6 +9,7 @@ REPLICATION_FACTOR=1
 topics=(
   "create.project"
   "project.created"
+  "prompt"
 )
 
 for topic in "${topics[@]}"; do

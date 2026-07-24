@@ -1,10 +1,9 @@
 import type { WorkflowState } from "../graph";
 import { mkdir } from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
 import { z } from "zod";
 import { model } from "@v7/llmclient";
 import { SYSTEM_PROMPTS } from "@/utils/prompts";
+import { getProjectDir, resolveWorkspacePath } from "@v7/env/sharedDir";
 
 function parseProjectInitResponse(raw: unknown) {
     const ProjectInitSchema = z.object({
@@ -53,9 +52,7 @@ function parseProjectInitResponse(raw: unknown) {
 
 export async function initProjectNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
     console.log("initializing project with id:", state.projectId);
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const targetDir = path.resolve(__dirname, "../../../../shared", state.projectId);
+    const targetDir = getProjectDir(state.projectId);
 
     await mkdir(targetDir, { recursive: true });
     console.log("Ensured project directory exists at:", targetDir);
@@ -108,7 +105,7 @@ export async function initProjectNode(state: WorkflowState): Promise<Partial<Wor
             parameters: {
                 command: item.command,
                 args: item.args ?? [],
-                cwd: item.cwd ?? targetDir,
+                cwd: resolveWorkspacePath(targetDir, item.cwd ?? "."),
             },
             reason: item.reason,
         })),

@@ -1,6 +1,7 @@
 import { type WorkflowState } from "../graph";
 import fs from "fs/promises";
 import path from "path";
+import { resolveWorkspaceRoot } from "@v7/env/sharedDir";
 
 type ListFilesOptions = {
     ignore?: string[];
@@ -53,7 +54,7 @@ export async function listFilesRecursive(
 export async function loadContextNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
 
     console.log("Reaches loadContext Node")
-    const rootPath = state.projectContext.rootPath;
+    const rootPath = resolveWorkspaceRoot(state.projectContext.rootPath);
     const fileTree = await listFilesRecursive(rootPath, { ignore: ["node_modules", "dist", ".git"] });
 
     const pkgJsonPath = path.join(rootPath, "package.json");

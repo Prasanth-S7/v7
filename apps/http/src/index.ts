@@ -5,10 +5,12 @@ import { env } from '@v7/env/http';
 import { createKafkaClient } from '@v7/kafka';
 import { Topics } from '@v7/kafka/topics';
 import { run } from './kafka/run';
+import { chat } from './routes/chat';
 
 const app = express();
 
 app.use(cors());
+app.use(express.json())
 
 const kafka = createKafkaClient("project-service");
 export const producer = kafka.producer();
@@ -40,6 +42,7 @@ app.get('/api/health', (req, res) => {
 })
 
 app.use('/api/project', project);
+app.use('/api/chat', chat);
 
 app.listen(env.HTTP_SERVER_PORT, () => {
     console.log(`HTTP server is running on http://localhost:${env.HTTP_SERVER_PORT}`)

@@ -12,6 +12,7 @@ export const env = createEnv({
     OLLAMA_BASE_URL: z.url().default("http://localhost:11434"),
     MODEL: z.string(),
     API_KEY: z.string().min(1),
+    SHARED_DIR: z.string().default("/home/prasanth/shared"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

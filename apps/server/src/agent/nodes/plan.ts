@@ -3,6 +3,7 @@ import { model, tools } from "@v7/llmclient";
 import type { StructuredToolInterface } from "@langchain/core/tools";
 import { appendFileSync, mkdirSync } from "fs";
 import path from "path";
+import { resolveWorkspaceRoot } from "@v7/env/sharedDir";
 
 function safeSerialize(details: unknown): string {
     if (typeof details === "string") {
@@ -51,6 +52,7 @@ function summarizeMessage(message: any) {
 
 export function buildInitialPrompt(state: WorkflowState): string {
     const isFixingError = !!state.projectContext.lastError;
+    const projectRoot = resolveWorkspaceRoot(state.projectContext.rootPath);
 
     return `
 
@@ -59,7 +61,7 @@ export function buildInitialPrompt(state: WorkflowState): string {
 The project has ALREADY been initialized. Do NOT scaffold, re-run "npm create vite",
 "tailwindcss init", or any project setup commands. This project already exists on disk.
 
-Project Directory: ${state.projectContext.rootPath}
+Project Directory: ${projectRoot}
 Stack: ${JSON.stringify(state.projectContext.stack)}
 Installed dependencies: ${JSON.stringify(state.projectContext.dependencies, null, 2)}
 
@@ -99,7 +101,7 @@ export async function planNode(state: WorkflowState): Promise<Partial<WorkflowSt
     // This node is the core "reasoning + tool use" loop.
     // It keeps the LLM grounded with the current project context, lets it choose tools,
     // sends tool outputs back to the model, and repeats until the model stops requesting tools.
-    const projectRoot = state.projectContext.rootPath;
+    const projectRoot = resolveWorkspaceRoot(state.projectContext.rootPath);
     const logDir = path.join(projectRoot, ".codex", "logs");
     mkdirSync(logDir, { recursive: true });
     const logFilePath = path.join(

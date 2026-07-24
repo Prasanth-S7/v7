@@ -1,7 +1,7 @@
 import { tool } from "langchain";
 import { z } from "zod";
 import { spawn } from "child_process";
-import { parse } from "path";
+import { resolveWorkspaceRoot } from "../helpers/guardRail";
 
 type ExecuteCommandInput = {
   command: string;
@@ -90,7 +90,8 @@ function runCommand({ command, args = [], cwd = process.cwd(), timeoutMs = 60_00
 export function executeCommand(projectRoot: string) {
     return tool(
         async ({ command, args = [] }: { command: string; args?: string[] }) => {
-            const result = await runCommand({command, args, cwd: projectRoot});
+            const workspaceRoot = resolveWorkspaceRoot(projectRoot);
+            const result = await runCommand({ command, args, cwd: workspaceRoot });
             const parsedResult = JSON.parse(result);
             if (!parsedResult.success) {
                 return `ERROR: command failed - ${parsedResult.stderr || parsedResult.error}`;

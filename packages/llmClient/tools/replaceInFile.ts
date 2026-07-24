@@ -1,8 +1,11 @@
 import { tool } from "langchain";
 import { z } from "zod";
 import fs from "fs/promises";
-import path from "path";
-import { assertInsideRoot } from "../helpers/guardRail";
+import {
+    assertInsideRoot,
+    resolveWorkspacePath,
+    resolveWorkspaceRoot,
+} from "../helpers/guardRail";
 
 type ReplaceInFileInput = {
     filePath: string;
@@ -40,8 +43,9 @@ function replaceSimpleStrings(content: string, search: string, replaceWith: stri
 export function replaceInFile(projectRoot: string) {
     return tool(
         async ({ filePath, search, replaceWith, replaceAll = false }: ReplaceInFileInput) => {
-            const absolutePath = path.resolve(projectRoot, filePath);
-            assertInsideRoot(absolutePath, projectRoot);
+            const workspaceRoot = resolveWorkspaceRoot(projectRoot);
+            const absolutePath = resolveWorkspacePath(workspaceRoot, filePath);
+            assertInsideRoot(absolutePath, workspaceRoot);
 
             try {
                 const currentContent = await fs.readFile(absolutePath, "utf-8");
