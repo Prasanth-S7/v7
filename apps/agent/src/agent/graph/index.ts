@@ -13,6 +13,9 @@ import { planNode } from "../nodes/plan";
 import { checkPromptNode } from "../nodes/checkPrompt";
 import { initProjectNode } from "../nodes/initProject";
 import { loadContextNode } from "../nodes/loadContext";
+import { MemorySaver } from "@langchain/langgraph";
+
+export const checkpointer = new MemorySaver();
 
 const graphStateSchema = new StateSchema({
     prompt: z.string().describe("The prompt to be processed"),
@@ -115,4 +118,6 @@ const graph = new StateGraph(graphStateSchema)
 .addEdge("build", END)
 
 
-export const workflow = graph.compile();
+export const workflow = graph.compile({
+    checkpointer,
+});
