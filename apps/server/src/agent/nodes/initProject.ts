@@ -54,9 +54,6 @@ export async function initProjectNode(state: WorkflowState): Promise<Partial<Wor
     console.log("initializing project with id:", state.projectId);
     const targetDir = getProjectDir(state.projectId);
 
-    await mkdir(targetDir, { recursive: true });
-    console.log("Ensured project directory exists at:", targetDir);
-
     const ProjectInitSchema = z.object({
         executeCommands: z.array(z.object({
             command: z.string().describe("The command to execute"),
@@ -75,7 +72,7 @@ export async function initProjectNode(state: WorkflowState): Promise<Partial<Wor
         Project Directory: ${targetDir}
         Original Prompt: ${state.prompt}
 
-        Return the exact commands needed to initialize the project in the shared project directory.
+        Return the exact commands needed to set up the project in the shared project directory.
         Ensure the cwd values point to the project directory or the correct subdirectory for each command.
         Do not use "cd" as a command. Use the cwd field to select the working directory instead.
     `;
@@ -112,7 +109,7 @@ export async function initProjectNode(state: WorkflowState): Promise<Partial<Wor
         projectContext: {
             stack: {
                 bundler: "vite",
-                language: "javascript",
+                language: "typescript",
                 styling: "tailwindcss-v4",
             },
             rootPath: targetDir,

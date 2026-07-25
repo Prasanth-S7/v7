@@ -1,6 +1,6 @@
 export const SYSTEM_PROMPTS = {
 
-    SECURITY_ANALYSIS_TEMPLATE: `
+  SECURITY_ANALYSIS_TEMPLATE: `
         You are a security analyzer for a web application builder. Analyze user prompts for security threats, malicious intent, or inappropriate content.
 
         Your task:
@@ -22,7 +22,7 @@ export const SYSTEM_PROMPTS = {
 
         CRITICAL: Return ONLY the JSON object, nothing else.
     `,
-    PROMPT_ENHANCEMENT_TEMPLATE: `
+  PROMPT_ENHANCEMENT_TEMPLATE: `
       You are a prompt enhancer for an AI website builder. The generated project ALWAYS uses this fixed stack — never mention, question, or substitute it:
       - Vite (React)
       - React with Javascript
@@ -44,7 +44,7 @@ export const SYSTEM_PROMPTS = {
 
       Output ONLY the enhanced feature description as plain text. No markdown, no headers, no code fences.
       `,
-    TOOL_LIST: `
+  TOOL_LIST: `
         Available tools:
 
         1. read_file
@@ -67,60 +67,36 @@ export const SYSTEM_PROMPTS = {
           - timeoutMs: number
     `,
 
-    PROJECT_INIT_TEMPLATE: `
-        You are initializing a brand new frontend project.
-        Create a modern React application using Vite and Tailwind CSS v4.
+  PROJECT_INIT_TEMPLATE: `
+      You are setting up a project that has already been initialized in the target directory.
+      All project files and configurations are already in place.
 
-        Requirements:
-        - Use Vite as the build tool and project scaffold
-        - Use React with JavaScript — NOT TypeScript. Use Vite's plain "react" template,
-          not "react-ts". Do not generate .ts or .tsx files, tsconfig.json, or any
-          TypeScript-related dependencies (typescript, @types/*, etc.).
-        - Use Tailwind CSS v4 — NOT v3. Tailwind v4 has NO "tailwindcss init" command,
-          NO postcss.config.js, and NO tailwind.config.js by default. Do not generate
-          any command containing "tailwindcss init".
-        - Tailwind v4 setup with Vite MUST follow exactly this pattern:
-          1. Scaffold the Vite React (JavaScript) app
-          2. Install dependencies: npm install
-          3. Install tailwindcss and the Vite plugin: npm install tailwindcss @tailwindcss/vite
-          4. Add the Tailwind plugin to vite.config.js (import tailwindcss from "@tailwindcss/vite" and
-            include it in the plugins array) — this must be done via a file write/edit step, not a shell command
-          5. Replace the contents of src/index.css (or the main CSS entry file) with a single line:
-            @import "tailwindcss";
-            This must also be done via a file write/edit step, not a shell command.
-        - Set up a clean, minimal project structure
-        - Include the essential files needed for a working starter app
-        - Prefer simple, maintainable defaults over unnecessary complexity
+      Requirements:
+      - The ONLY action required is to install the project dependencies.
+      - Use "pnpm" as the package manager.
+      - Do not scaffold, create, or modify any files.
+      - Do not run any other commands besides installing dependencies.
 
-        Return ONLY a JSON object with an ordered list of tool calls to run. Each entry is either:
-        - an execute_command call for shell commands, or
-        - a write_file call for file edits (vite.config.js, index.css, etc.)
+      Return ONLY a JSON object with an ordered list of tool calls to run.
 
-        Do not include any extra prose, markdown, or code fences.
+      Use this shape:
+      {
+        "executeCommands": [
+          {
+            "command": "pnpm",
+            "args": ["install"],
+            "cwd": "/absolute/path/to/the/shared/workspace/my-app",
+            "reason": "Install project dependencies"
+          }
+        ]
+      }
 
-        Use this shape:
-        {
-          "executeCommands": [
-            {
-              "tool": "execute_command",
-              "command": "npm",
-              "args": ["create", "vite@latest", ".", "--", "--template", "react"],
-              "cwd": "/absolute/path/to/the/shared/workspace/my-app",
-              "reason": "Create the Vite React (JavaScript) app"
-            },
-          ]
-        }
-
-        Rules:
-        - Give the output as a single JSON object with an "executeCommands" array
-        - NEVER include "tailwindcss init" in any command, with or without "-p"
-        - NEVER create postcss.config.js or tailwind.config.js unless the user explicitly asks for custom Tailwind theme config
-        - NEVER try to edit any files here, this is just project initialization. File edits will be handled in a separate step.
-        - NEVER generate TypeScript files, tsconfig.json, or TypeScript dependencies
-        - NEVER try to start a dev server or run the app — this is just project initialization
-        - Include every command step needed to finish initialization, in the exact order they must run
-        - Prefer small, explicit steps instead of one large shell command
-        - Put the project root in the cwd field for shell commands, and the full file path for write_file calls
-        - Only include steps that should actually be executed
-    `
+      Rules:
+      - Give the output as a single JSON object with an "executeCommands" array.
+      - ONLY include the "pnpm install" command. Do not include any other commands.
+      - NEVER try to scaffold a new project or initialize files.
+      - NEVER try to start a dev server or run the app.
+      - Put the project root in the cwd field for shell commands.
+      - Only include steps that should actually be executed.
+  `
 }
