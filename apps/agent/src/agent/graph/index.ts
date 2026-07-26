@@ -4,6 +4,7 @@ import {
     StateGraph,
     StateSchema
 } from "@langchain/langgraph";
+import { loadMemory } from "../nodes/loadMemory";
 
 import { z } from "zod";
 import { buildNode } from "../nodes/build";
@@ -83,6 +84,13 @@ const routeAfterLoadContext = (state: WorkflowState) => {
     return "build";
 };
 
+
+const routeAfterEnhancePrompt = (state: WorkflowState) => {
+    return state.initProject
+        ? "loadContext"
+        : "initProjectNode";
+};
+
 const graph = new StateGraph(graphStateSchema)
 .addNode("checkPrompt", checkPromptNode)
 .addNode("enhancePrompt", enhancePromptNode)
@@ -98,12 +106,15 @@ const graph = new StateGraph(graphStateSchema)
     end: END,
 })
 
-.addConditionalEdges("enhancePrompt", (state) =>
-    state.initProject ? "loadContext" : "initProjectNode"
-, {
-    loadContext: "loadContext",
-    initProjectNode: "initProjectNode",
-})
+
+.addConditionalEdges(
+    "enhancePrompt",
+    routeAfterEnhancePrompt,
+    {
+        loadContext: "loadContext",
+        initProjectNode: "initProjectNode",
+    }
+)
 
 .addEdge("initProjectNode", "execute")
 .addEdge("execute", "loadContext")

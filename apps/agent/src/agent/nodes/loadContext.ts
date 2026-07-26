@@ -54,6 +54,7 @@ export async function listFilesRecursive(
 export async function loadContextNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
 
     console.log("Reaches loadContext Node")
+    console.log(state.projectContext)
     const rootPath = resolveWorkspaceRoot(state.projectContext.rootPath);
     const fileTree = await listFilesRecursive(rootPath, { ignore: ["node_modules", "dist", ".git"] });
 

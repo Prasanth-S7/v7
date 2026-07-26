@@ -8,7 +8,8 @@
     "./web": "./src/web.ts",
     "./http": "./src/http.ts",
     "./shared": "./src/shared.ts",
-    "./sharedDir": "./src/sharedDir.ts"
+    "./sharedDir": "./src/sharedDir.ts",
+    "./sse": "./src/sse.ts"
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.1",

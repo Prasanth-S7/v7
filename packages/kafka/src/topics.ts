@@ -6,5 +6,6 @@ export const Topics = {
     BUILD_PROJECT: "build.project", 
     PROJECT_BUILT: "project.built",
     RUN_PROJECT: "run.project",
-    PROJECT_RUNNING: "project.running"
+    PROJECT_RUNNING: "project.running",
+    SSE_EVENT: "sse.event"
 }
