@@ -1,9 +1,19 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth-client";
-import { ArrowUp } from "lucide-react";
 import { useState } from "react";
 import axios from "axios";
+import { toast } from "sonner";
 import { env } from "@v7/env/web";
+import LogoutButton from "@/components/logout-button";
+
+const TITLE = `
+██╗   ██╗██████╗
+██║   ██║╚════██╗
+██║   ██║   ██╔╝
+╚██╗ ██╔╝  ██╔╝
+ ╚████╔╝  ██╔╝
+  ╚═══╝   ╚═╝
+`;
 
 export const Route = createFileRoute("/dashboard")({
   component: RouteComponent,
@@ -20,67 +30,43 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function RouteComponent() {
-  const { session } = Route.useRouteContext();
-  const userName = session.data?.user.name || "User";
-
+  const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter"){
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      try{
-          axios.post(env.VITE_SERVER_URL + "/api/project/", {
-          projectId: '123',
-          prompt: prompt,
-        });
-      }
-      catch (error) {
-        console.log("Error sending prompt:", error);
+      try {
+        const res = await axios.post(env.VITE_SERVER_URL + "/api/project/create");
+        if (!res.data?.projectId) {
+          toast.error("Project creation failed");
+          return;
+        }
+        navigate({ to: "/projects/$projectId", params: { projectId: res.data.projectId }, search: { prompt } });
+      } catch (error) {
+        toast.error("Project creation failed");
       }
     }
-  }
+  };
 
   return (
-    <div className="flex h-screen bg-white">
-      <main className="flex-1 flex flex-col">
-        <div className="flex-1 overflow-auto">
-          <div className="max-w-3xl mx-auto px-6 py-12">
-            <div className="text-center mb-10">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-200">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-300 to-purple-500" />
-              </div>
-              <h1 className="text-3xl font-medium text-gray-900 mb-2">
-                Good Afternoon, {userName}
-              </h1>
-              <p className="text-3xl font-medium text-gray-900">
-                What's on{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-purple-700">
-                  your mind?
-                </span>
-              </p>
-            </div>
-            <div className="relative mb-8">
-              <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-                <div className="p-4">
-                  <textarea
-                    placeholder="Ask AI"
-                    className="w-full resize-none border-0 outline-none text-gray-700 placeholder-gray-400 min-h-[80px]"
-                    rows={3}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    value={prompt}
-                    onKeyDown={handleKeyDown}
-                  />
-                </div>
-                <div className="flex items-center justify-between px-4 pb-4">
-                  <div className="flex items-center space-x-3">
-                    <button className="p-2 rounded-lg bg-black text-white hover:bg-gray-800">
-                      <ArrowUp className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="flex h-screen bg-black">
+      <div className="absolute top-4 right-4">
+        <LogoutButton />
+      </div>
+      <main className="flex-1 flex flex-col items-center justify-center px-6">
+        <pre className="text-white font-mono text-sm leading-tight mb-10">
+          {TITLE}
+        </pre>
+        <div className="w-full max-w-xl">
+          <textarea
+            placeholder="build something cool..."
+            className="w-full bg-neutral-900 border-l-4 border-red-600 text-white placeholder-gray-500 px-4 py-3 outline-none resize-none"
+            rows={3}
+            onChange={(e) => setPrompt(e.currentTarget.value)}
+            value={prompt}
+            onKeyDown={handleKeyDown}
+          />
         </div>
       </main>
     </div>
