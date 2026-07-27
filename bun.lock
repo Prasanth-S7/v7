@@ -48,9 +48,11 @@
       "dependencies": {
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.6",
+        "@v7/auth": "workspace:*",
         "@v7/db": "workspace:*",
         "@v7/env": "workspace:*",
         "@v7/kafka": "workspace:*",
+        "better-auth": "catalog:",
         "cors": "^2.8.6",
         "express": "^5.2.1",
         "kafkajs": "^2.2.4",
@@ -252,6 +254,7 @@
         "next-themes": "catalog:",
         "react": "^19.2.3",
         "react-dom": "^19.2.3",
+        "react-resizable-panels": "^4.12.2",
         "shadcn": "^3.6.2",
         "sonner": "^2.0.5",
         "tailwind-merge": "^3.3.1",
@@ -1734,6 +1737,8 @@
     "react-hook-form": ["react-hook-form@7.72.1", "", { "peerDependencies": { "react": "^16.8.0 || ^17 || ^18 || ^19" } }, "sha512-RhwBoy2ygeVZje+C+bwJ8g0NjTdBmDlJvAUHTxRjTmSUKPYsKfMphkS2sgEMotsY03bP358yEYlnUeZy//D9Ig=="],
 
     "react-refresh": ["react-refresh@0.18.0", "", {}, "sha512-QgT5//D3jfjJb6Gsjxv0Slpj23ip+HtOpnNgnb2S5zU3CB26G/IDPGoy4RJB42wzFE46DRsstbW6tKHoKbhAxw=="],
+
+    "react-resizable-panels": ["react-resizable-panels@4.12.2", "", { "peerDependencies": { "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" } }, "sha512-NwY5LCo4WrxVvDh0xoMML6EMLPONP/8ckKcIdpnojxexoatZdjLiRqLJQjQK5CPkd4SYiB/2M5BVrjZBQtOO7Q=="],
 
     "react-vite-ui": ["react-vite-ui@workspace:packages/template"],
 

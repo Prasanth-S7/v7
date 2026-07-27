@@ -4,7 +4,6 @@ import {
     StateGraph,
     StateSchema
 } from "@langchain/langgraph";
-import { loadMemory } from "../nodes/loadMemory";
 
 import { z } from "zod";
 import { buildNode } from "../nodes/build";

@@ -6,11 +6,20 @@ import { createKafkaClient } from '@v7/kafka';
 import { Topics } from '@v7/kafka/topics';
 import { run } from './kafka/run';
 import { chat } from './routes/chat';
+import { auth } from "@v7/auth";
+import { env as serverEnv } from "@v7/env/server";
+import { toNodeHandler } from "better-auth/node";
 
 const app = express();
-
-app.use(cors());
 app.use(express.json())
+app.use(
+  cors({
+    origin: serverEnv.CORS_ORIGIN,
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  }),
+);
 
 const kafka = createKafkaClient("project-service");
 export const producer = kafka.producer();
@@ -36,6 +45,8 @@ const createConnection = async () => {
     }
 }
 createConnection();
+
+app.all("/api/auth{/*path}", toNodeHandler(auth));
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok' });

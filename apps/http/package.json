@@ -22,6 +22,8 @@
     "@types/express": "^5.0.6",
     "@v7/db": "workspace:*",
     "@v7/env": "workspace:*",
+    "@v7/auth": "workspace:*",
+    "better-auth": "catalog:",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "kafkajs": "^2.2.4",
