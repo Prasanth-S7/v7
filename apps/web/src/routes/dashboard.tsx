@@ -42,7 +42,7 @@ function RouteComponent() {
           toast.error("Project creation failed");
           return;
         }
-        navigate({ to: "/projects/$projectId", params: { projectId: res.data.projectId }, search: { prompt } });
+        navigate({ to: "/projects/$projectId", params: { projectId: res.data.projectId }, state: {prompt: prompt}});
       } catch (error) {
         toast.error("Project creation failed");
       }

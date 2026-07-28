@@ -1,6 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { z } from "zod";
+import { createFileRoute, useRouterState } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import axios from "axios";
+import { env } from "@v7/env/web";
+import { toast } from "sonner";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -8,29 +10,51 @@ import {
 } from "@v7/ui/components/resizable";
 import { Message, MessageContent, MessageGroup } from "@v7/ui/components/message";
 
-const searchSchema = z.object({
-  prompt: z.string().optional(),
-});
-
 export const Route = createFileRoute("/projects/$projectId")({
-  validateSearch: searchSchema,
   component: ProjectComponent,
 });
 
 function ProjectComponent() {
   const { projectId } = Route.useParams();
-  const { prompt: initialPrompt } = Route.useSearch();
-  const [messages, setMessages] = useState<string[]>(
-    initialPrompt ? [initialPrompt] : [],
-  );
+  const initialPrompt = useRouterState({ select: (s) => s.location.state });
+  const [messages, setMessages] = useState<string[]>([]);
   const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const initialSent = useRef(false);
+
+  const sendMessage = async (text: string) => {
+    setSending(true);
+    try {
+      const res = await axios.post(env.VITE_SERVER_URL + "/api/chat/" + projectId, {
+        prompt: text,
+      });
+      if(!res.data.msg){
+        toast.error("Error while sending prompt. Please try again later!")
+      }
+    } catch (error) {
+      console.log("Error sending message:", error);
+      toast.error("Error sending message")
+    } finally {
+      setSending(false);
+    }
+  };
+
+  useEffect(() => {
+    if (initialPrompt && !initialSent.current) {
+      initialSent.current = true;
+      setMessages([initialPrompt.prompt]);
+      sendMessage(initialPrompt.prompt);
+    }
+  }, [initialPrompt]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (!input.trim()) return;
-      setMessages((prev) => [...prev, input]);
+      if (!input.trim() || sending) return;
+      const text = input;
       setInput("");
+      setMessages((prev) => [...prev, text]);
+      sendMessage(text);
     }
   };
 
