@@ -4,7 +4,6 @@ services:
     container_name: broker
     ports:
       - "9092:9092"
-
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -14,10 +13,58 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
 
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:9093
 
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
 
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  http:
+    build:
+      context: .
+      dockerfile: apps/http/Dockerfile
+    image: v7-http:latest
+    container_name: v7-http
+    depends_on:
+      - broker
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./apps/http/.env.production
+
+  agent:
+    build:
+      context: .
+      dockerfile: apps/agent/Dockerfile
+    image: v7-agent:latest
+    container_name: v7-agent
+    depends_on:
+      - broker
+    env_file:
+      - ./apps/agent/.env.production
+
+  sse:
+    build:
+      context: .
+      dockerfile: apps/sse/Dockerfile
+    image: v7-sse:latest
+    container_name: v7-sse
+    depends_on:
+      - broker
+    ports:
+      - "3002:3002"
+    env_file:
+      - ./apps/sse/.env.production
+
+  shared:
+    build:
+      context: .
+      dockerfile: apps/shared/Dockerfile
+    image: v7-shared:latest
+    container_name: v7-shared
+    depends_on:
+      - broker
+    env_file:
+      - ./apps/shared/.env.production

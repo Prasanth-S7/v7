@@ -13,6 +13,7 @@ export const env = createEnv({
     MODEL: z.string(),
     API_KEY: z.string().min(1),
     SHARED_DIR: z.string().default("/home/prasanth/shared"),
+    KAFKA_BROKER: z.string().default("localhost:9092")
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

@@ -27,13 +27,14 @@ export const consumer = kafka.consumer({
     groupId: "project-service-group"
 });
 
-await consumer.connect();
-
-await consumer.subscribe({
-    topic: Topics.PROJECT_CREATED,
-});
-
-run();
+async function connectKafka(){
+    await consumer.connect();
+    await consumer.subscribe({
+        topic: Topics.PROJECT_CREATED,
+    });
+    await run();
+}
+connectKafka();
 
 const createConnection = async () => {
     try {
