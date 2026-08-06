@@ -1,4 +1,4 @@
-# shared
+# worker
 
 To install dependencies:
 

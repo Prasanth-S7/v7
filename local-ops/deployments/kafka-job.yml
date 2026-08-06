@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-topic-init
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: create-topics
+          image: apache/kafka:latest
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+
+              BOOTSTRAP_SERVERS="broker:9092"
+              PARTITIONS=1
+              REPLICATION_FACTOR=1
+
+              echo "Waiting for Kafka..."
+
+              until /opt/kafka/bin/kafka-topics.sh \
+                --bootstrap-server "$BOOTSTRAP_SERVERS" \
+                --list >/dev/null 2>&1; do
+                sleep 2
+              done
+
+              topics="create.project project.created prompt sse.event"
+
+              for topic in $topics; do
+                echo "Creating topic: $topic"
+
+                /opt/kafka/bin/kafka-topics.sh \
+                  --bootstrap-server "$BOOTSTRAP_SERVERS" \
+                  --create \
+                  --if-not-exists \
+                  --topic "$topic" \
+                  --partitions "$PARTITIONS" \
+                  --replication-factor "$REPLICATION_FACTOR"
+              done
+
+              echo "Kafka topics are ready."

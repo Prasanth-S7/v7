@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shared-deployment
+  labels:
+    app: shared
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shared
+  template:
+    metadata:
+      labels:
+        app: shared
+    spec:
+      containers:
+        - name: shared-container
+          image: v7-shared:latest

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { randomUUID } from "crypto";
-import prisma  from "@v7/db";
+import prisma from "@v7/db";
 import { producer } from "..";
 import { Topics } from "@v7/kafka/topics";
 

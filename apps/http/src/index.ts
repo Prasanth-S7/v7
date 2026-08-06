@@ -13,12 +13,12 @@ import { toNodeHandler } from "better-auth/node";
 const app = express();
 app.use(express.json())
 app.use(
-  cors({
-    origin: serverEnv.CORS_ORIGIN,
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  }),
+    cors({
+        origin: serverEnv.CORS_ORIGIN,
+        methods: ["GET", "POST", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: true,
+    }),
 );
 
 const kafka = createKafkaClient("project-service");
@@ -27,10 +27,10 @@ export const consumer = kafka.consumer({
     groupId: "project-service-group"
 });
 
-async function connectKafka(){
+async function connectKafka() {
     await consumer.connect();
     await consumer.subscribe({
-        topic: Topics.PROJECT_CREATED,
+        topics: [Topics.PROJECT_CREATED],
     });
     await run();
 }

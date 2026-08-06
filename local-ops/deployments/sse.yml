@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sse-deployment
+  labels:
+    app: sse
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sse
+  template:
+    metadata:
+      labels:
+        app: sse
+    spec:
+      containers:
+        - name: sse-container
+          image: v7-sse:latest
+          ports:
+            - containerPort: 3000

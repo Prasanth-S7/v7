@@ -4,9 +4,9 @@ import type { EachMessagePayload } from "kafkajs";
 import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 import {
-	S3Client,
-	ListObjectsV2Command,
-	GetObjectCommand,
+    S3Client,
+    ListObjectsV2Command,
+    GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { env } from "@v7/env/shared";
 import { getProjectDir } from "@v7/env/sharedDir";
@@ -27,12 +27,12 @@ await consumer.subscribe({
 });
 
 const s3 = new S3Client({
-	region: "auto",
-	endpoint: env.R2_ENDPOINT,
-	credentials: {
-		accessKeyId: env.ACCESS_KEY_ID,
-		secretAccessKey: env.SECRET_ACCESS_KEY,
-	},
+    region: "auto",
+    endpoint: env.R2_ENDPOINT,
+    credentials: {
+        accessKeyId: env.ACCESS_KEY_ID,
+        secretAccessKey: env.SECRET_ACCESS_KEY,
+    },
 });
 
 function normalizePrefix(prefix: string) {
