@@ -9,6 +9,7 @@ import {
   ResizablePanelGroup,
 } from "@v7/ui/components/resizable";
 import { Message, MessageContent, MessageGroup } from "@v7/ui/components/message";
+import { useSSE } from "@/hooks/useSSE";
 
 export const Route = createFileRoute("/projects/$projectId")({
   component: ProjectComponent,
@@ -21,6 +22,7 @@ function ProjectComponent() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const initialSent = useRef(false);
+  const sse = useSSE(env.VITE_SSE_URL, projectId)
 
   const sendMessage = async (text: string) => {
     setSending(true);
@@ -28,7 +30,7 @@ function ProjectComponent() {
       const res = await axios.post(env.VITE_SERVER_URL + "/api/chat/" + projectId, {
         prompt: text,
       });
-      if(!res.data.msg){
+      if (!res.data.msg) {
         toast.error("Error while sending prompt. Please try again later!")
       }
     } catch (error) {

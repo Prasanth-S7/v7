@@ -18,4 +18,4 @@ spec:
         - name: sse-container
           image: v7-sse:latest
           ports:
-            - containerPort: 3000
+            - containerPort: 3002

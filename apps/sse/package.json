@@ -18,8 +18,10 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "express": "^5.2.1",
+    "@types/cors": "^2.8.19",
     "@v7/env": "workspace:*",
-    "@v7/kafka": "workspace:*"
+    "@v7/kafka": "workspace:*",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
   }
 }

@@ -4,8 +4,10 @@ import { createKafkaClient } from "@v7/kafka";
 import { Topics } from "@v7/kafka/topics";
 import { run } from "../kafka/run";
 import { env } from "@v7/env/sse"
+import cors from "cors";
 
 const app = express();
+app.use(cors());
 
 const connections = new Map<string, Set<Response>>();
 
@@ -20,13 +22,13 @@ export function sendSse(projectId: string, data: unknown) {
 }
 
 export const consumer = kafka.consumer({
-    groupId: "sse-service-group",
+  groupId: "sse-service-group",
 });
 
 await consumer.connect();
 
 await consumer.subscribe({
-    topic: Topics.SSE_EVENT,
+  topic: Topics.SSE_EVENT,
 });
 
 run();
@@ -34,16 +36,16 @@ run();
 app.get("/events", (req: Request, res: Response) => {
   const projectId = req.query.projectId as string;
 
-  res.writeHead(200, {
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
-    Connection: "keep-alive",
-  });
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
 
   if (!connections.has(projectId)) {
     connections.set(projectId, new Set());
   }
   connections.get(projectId)!.add(res);
+
 
   req.on("close", () => {
     const clients = connections.get(projectId);

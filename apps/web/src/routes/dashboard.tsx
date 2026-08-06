@@ -5,6 +5,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { env } from "@v7/env/web";
 import LogoutButton from "@/components/logout-button";
+import { useSSE } from "@/hooks/useSSE";
 
 const TITLE = `
 ██╗   ██╗██████╗
@@ -39,11 +40,13 @@ function RouteComponent() {
       try {
         const res = await axios.post(env.VITE_SERVER_URL + "/api/project/create");
         if (!res.data?.projectId) {
+          console.log("reaches here")
           toast.error("Project creation failed");
           return;
         }
-        navigate({ to: "/projects/$projectId", params: { projectId: res.data.projectId }, state: {prompt: prompt}});
+        navigate({ to: "/projects/$projectId", params: { projectId: res.data.projectId }, state: { prompt: prompt } });
       } catch (error) {
+        console.log(error)
         toast.error("Project creation failed");
       }
     }
