@@ -101,8 +101,6 @@ const handleProjectCreate = async ({ topic, message }: EachMessagePayload) => {
 
     const targetDir = getProjectDir(projectId);
 
-    console.log(`Received message on topic ${topic}:`, { projectId, targetDir });
-
     await rm(targetDir, { recursive: true, force: true });
     await downloadS3Folder(env.TEMPLATE_BUCKET_NAME, env.TEMPLATE_FOLDER_PREFIX, targetDir);
 

@@ -2,6 +2,7 @@ import { type WorkflowState } from "../graph";
 import fs from "fs/promises";
 import path from "path";
 import { resolveWorkspaceRoot } from "@v7/env/sharedDir";
+import { sendSseEvent } from "@/utils/sse";
 
 type ListFilesOptions = {
     ignore?: string[];
@@ -69,6 +70,8 @@ export async function loadContextNode(state: WorkflowState): Promise<Partial<Wor
         fileTreeCount: fileTree.length,
         dependenciesCount: Object.keys(dependencies).length,
     });
+
+    sendSseEvent(state.projectId, { message: "Project context loaded successfully" })
 
     return {
         initProject: isProjectInit,

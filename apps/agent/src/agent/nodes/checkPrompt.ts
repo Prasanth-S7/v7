@@ -2,6 +2,7 @@ import type { WorkflowState } from "../graph";
 import { model } from "@v7/llmclient"
 import { SYSTEM_PROMPTS } from "@/utils/prompts";
 import { z } from "zod";
+import { sendSseEvent } from "@/utils/sse";
 
 const SecurityResponseSchema = z.object({
     isSafe: z.boolean().describe("Indicates if the prompt is safe to execute"),
@@ -44,8 +45,9 @@ function parseSecurityResponse(raw: unknown) {
     return null;
 }
 
-export async function checkPromptNode (state: WorkflowState): Promise<Partial<WorkflowState>> {
+export async function checkPromptNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
     const structuredModel = model.withStructuredOutput(SecurityResponseSchema);
+    sendSseEvent(state.projectId, { message: "Checking prompt for safety..." })
     console.log("[checkPromptNode] model info:", {
         modelName: (model as { name?: string }).name,
         modelType: model?.constructor?.name,
@@ -72,6 +74,7 @@ export async function checkPromptNode (state: WorkflowState): Promise<Partial<Wo
         console.log("[checkPromptNode] parsed security response:", response);
 
         if (!response) {
+            sendSseEvent(state.projectId, { message: "Security analysis did not return a valid structured response." })
             return {
                 analysis: {
                     isSafe: false,
@@ -80,25 +83,28 @@ export async function checkPromptNode (state: WorkflowState): Promise<Partial<Wo
             };
         }
 
-        if(response.isSafe) {
-        return {
-            analysis: {
-                isSafe: true,
-                reason: response.reason || "The prompt is safe to execute."
+        if (response.isSafe) {
+            sendSseEvent(state.projectId, { message: "Prompt is safe to execute." })
+            return {
+                analysis: {
+                    isSafe: true,
+                    reason: response.reason || "The prompt is safe to execute."
+                }
             }
         }
-    }
-    else {
-        return {
-            analysis: {
-                isSafe: false,
-                reason: response.reason || "The prompt was flagged as unsafe, but no reason was provided."
+        else {
+            sendSseEvent(state.projectId, { message: "Prompt is unsafe to execute." })
+            return {
+                analysis: {
+                    isSafe: false,
+                    reason: response.reason || "The prompt was flagged as unsafe, but no reason was provided."
+                }
             }
         }
-    }
     }
     catch (error) {
         console.error("Error during security analysis:", error);
+        sendSseEvent(state.projectId, { message: "An error occurred during security analysis. The prompt could not be verified as safe." })
         return {
             analysis: {
                 isSafe: false,
@@ -106,5 +112,5 @@ export async function checkPromptNode (state: WorkflowState): Promise<Partial<Wo
             }
         }
     }
-    
+
 }

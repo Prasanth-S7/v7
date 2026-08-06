@@ -8,10 +8,12 @@ export const consumer = kafka.consumer({
     groupId: "agent-service-group"
 });
 
-async function connectKafka(){
+async function connectKafka() {
     await consumer.connect();
+    await producer.connect();
     await consumer.subscribe({
         topic: Topics.PROMPT,
+        fromBeginning: true
     });
     await run();
 }

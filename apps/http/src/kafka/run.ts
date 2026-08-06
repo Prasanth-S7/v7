@@ -1,4 +1,4 @@
-import { consumer } from "..";
+import { consumer, producer } from "..";
 import { Topics } from "@v7/kafka/topics";
 import prisma from "@v7/db";
 
@@ -11,6 +11,14 @@ export const run = async () => {
                 case Topics.PROJECT_CREATED: {
                     if (!value) {
                         console.log("Project creation failed..")
+                        await producer.send({
+                            topic: Topics.SSE_EVENT,
+                            messages: [{
+                                key: "",
+                                value: JSON.stringify({ message: "Project creation failed" })
+                            }]
+                        });
+                        return
                     }
                     const msg = JSON.parse(value!);
                     if (msg.success) {
@@ -23,8 +31,13 @@ export const run = async () => {
                             }
                         })
                     }
-
-                    //send sse from here
+                    await producer.send({
+                        topic: Topics.SSE_EVENT,
+                        messages: [{
+                            key: msg.projectId,
+                            value: JSON.stringify({ message: "Project created successfully" })
+                        }]
+                    })
                 }
             }
         },

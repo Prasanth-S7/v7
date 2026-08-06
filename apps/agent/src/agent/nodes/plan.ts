@@ -4,6 +4,7 @@ import type { StructuredToolInterface } from "@langchain/core/tools";
 import { appendFileSync, mkdirSync } from "fs";
 import path from "path";
 import { resolveWorkspaceRoot } from "@v7/env/sharedDir";
+import { sendSseEvent } from "@/utils/sse";
 
 function safeSerialize(details: unknown): string {
     if (typeof details === "string") {
@@ -71,9 +72,9 @@ ${state.projectContext.fileTree.map((f) => `- ${f}`).join("\n")}
 ## Your Task
 
 ${isFixingError
-    ? `The previous attempt failed with this error:\n\n${state.projectContext.lastError}\n\nInvestigate the relevant file(s) using read_file, diagnose the root cause, then fix it using edit_file or write_file. Do not repeat the exact same change that caused this failure.`
-    : `User's request: ${state.enhancedPrompt}\n\nOriginal prompt: ${state.prompt}`
-}
+            ? `The previous attempt failed with this error:\n\n${state.projectContext.lastError}\n\nInvestigate the relevant file(s) using read_file, diagnose the root cause, then fix it using edit_file or write_file. Do not repeat the exact same change that caused this failure.`
+            : `User's request: ${state.enhancedPrompt}\n\nOriginal prompt: ${state.prompt}`
+        }
 
 ## How to work
 
@@ -101,6 +102,7 @@ export async function planNode(state: WorkflowState): Promise<Partial<WorkflowSt
     // This node is the core "reasoning + tool use" loop.
     // It keeps the LLM grounded with the current project context, lets it choose tools,
     // sends tool outputs back to the model, and repeats until the model stops requesting tools.
+    sendSseEvent(state.projectId, { message: "Planning..." })
     const projectRoot = resolveWorkspaceRoot(state.projectContext.rootPath);
     const logDir = path.join(projectRoot, ".codex", "logs");
     mkdirSync(logDir, { recursive: true });
@@ -217,6 +219,7 @@ export async function planNode(state: WorkflowState): Promise<Partial<WorkflowSt
         filesTouched: changeLog.map((c) => c.path).filter(Boolean),
         finalError,
     });
+    sendSseEvent(state.projectId, { message: "Plan executed successfully" })
 
     return {
         planExecuted: true,

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { model } from "@v7/llmclient";
 import { SYSTEM_PROMPTS } from "@/utils/prompts";
 import { getProjectDir, resolveWorkspacePath } from "@v7/env/sharedDir";
+import { sendSseEvent } from "@/utils/sse";
 
 function parseProjectInitResponse(raw: unknown) {
     const ProjectInitSchema = z.object({
@@ -94,6 +95,8 @@ export async function initProjectNode(state: WorkflowState): Promise<Partial<Wor
     }
 
     console.log("[initProjectNode] parsed project init command plan:", response);
+
+    sendSseEvent(state.projectId, { message: "Installing project dependencies..." })
 
     return {
         toolCalls: response.executeCommands.map((item) => ({
