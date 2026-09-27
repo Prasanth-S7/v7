@@ -1,15 +1,14 @@
 import { Router } from "express";
-import prisma  from "@v7/db";
+import prisma from "@v7/db";
 import { producer } from "..";
 import { Topics } from "@v7/kafka/topics";
 
 export const chat: ReturnType<typeof Router> = Router();
 
 chat.post("/:projectId", async (req, res) => {
-    try{
-        console.log(req.body)
+    try {
         const { prompt } = req.body;
-        if(!prompt){
+        if (!prompt) {
             return res.json({
                 msg: "Error. Please provide the prompt to continue"
             })
@@ -20,25 +19,32 @@ chat.post("/:projectId", async (req, res) => {
                 id: projectId
             }
         })
-        if(!project){
+        if (!project) {
             return res.json({
                 msg: "Could not find the project"
             })
         }
-        await producer.send({
-            topic: Topics.PROMPT,
-            messages: [
-                {   
-                    key: projectId,
-                    value: JSON.stringify({ prompt: prompt })
-                }
-            ]
-        })
+        if (project.projectStatus != 'GENERATING') {
+            await producer.send({
+                topic: Topics.PROMPT,
+                messages: [
+                    {
+                        key: projectId,
+                        value: JSON.stringify({ prompt: prompt })
+                    }
+                ]
+            })
+        }
+        else {
+            return res.json({
+                msg: "Previous request is not completed"
+            })
+        }
         return res.json({
             msg: "Running the workflow....."
         })
     }
-    catch(error){
+    catch (error) {
         console.log(error)
         return res.json({
             msg: "Error"

@@ -11,6 +11,7 @@ topics=(
   "project.created"
   "prompt"
   "sse.event"
+  "upload.project"
 )
 
 for topic in "${topics[@]}"; do

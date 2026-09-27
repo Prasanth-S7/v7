@@ -1,6 +1,19 @@
 import { createKafkaClient } from "@v7/kafka";
 import { Topics } from "@v7/kafka/topics";
 import { run } from "./kafka/run";
+import pino from "pino";
+
+export const logger = pino({
+  level: "info",
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: "yyyy-mm-dd HH:MM:ss",
+      ignore: "pid,hostname",
+    },
+  },
+});
 
 const kafka = createKafkaClient("agent-service");
 export const producer = kafka.producer();

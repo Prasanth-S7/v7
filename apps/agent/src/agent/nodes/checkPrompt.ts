@@ -3,55 +3,23 @@ import { model } from "@v7/llmclient"
 import { SYSTEM_PROMPTS } from "@/utils/prompts";
 import { z } from "zod";
 import { sendSseEvent } from "@/utils/sse";
+import { logger } from "@/index";
 
 const SecurityResponseSchema = z.object({
     isSafe: z.boolean().describe("Indicates if the prompt is safe to execute"),
     reason: z.string().describe("If the prompt is not safe, provide a reason why"),
 })
 
-function parseSecurityResponse(raw: unknown) {
-    const parsed = SecurityResponseSchema.safeParse(raw);
-    if (parsed.success) {
-        return parsed.data;
-    }
-
-    if (typeof raw === "string") {
-        try {
-            const json = JSON.parse(raw);
-            const parsedJson = SecurityResponseSchema.safeParse(json);
-            if (parsedJson.success) {
-                return parsedJson.data;
-            }
-        } catch {
-            // Ignore JSON parsing errors and fall through to the unsafe default below.
-        }
-    }
-
-    if (raw && typeof raw === "object" && "content" in raw) {
-        const content = (raw as { content?: unknown }).content;
-        if (typeof content === "string") {
-            try {
-                const json = JSON.parse(content);
-                const parsedContent = SecurityResponseSchema.safeParse(json);
-                if (parsedContent.success) {
-                    return parsedContent.data;
-                }
-            } catch {
-                // Ignore JSON parsing errors and fall through to the unsafe default below.
-            }
-        }
-    }
-
-    return null;
-}
-
 export async function checkPromptNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
+
+    logger.info({
+        model: model.lc_kwargs.model,
+        modelType: model?.constructor?.name,
+    }, "Model Info:");
+
     const structuredModel = model.withStructuredOutput(SecurityResponseSchema);
     sendSseEvent(state.projectId, { message: "Checking prompt for safety..." })
-    console.log("[checkPromptNode] model info:", {
-        modelName: (model as { name?: string }).name,
-        modelType: model?.constructor?.name,
-    });
+    
 
     try {
         const prompt = SYSTEM_PROMPTS.SECURITY_ANALYSIS_TEMPLATE + "\n\nOriginal Prompt: " + state.prompt;
@@ -62,16 +30,9 @@ export async function checkPromptNode(state: WorkflowState): Promise<Partial<Wor
             }
         ];
 
-        console.log("[checkPromptNode] sending security analysis prompt");
+        const response = await structuredModel.invoke(messages);
 
-        const structuredResponse = await structuredModel.invoke(messages);
-        console.log("[checkPromptNode] structured response:", structuredResponse);
-
-        const response =
-            parseSecurityResponse(structuredResponse) ??
-            parseSecurityResponse(await model.invoke(messages));
-
-        console.log("[checkPromptNode] parsed security response:", response);
+        logger.info({ response }, "Response:");
 
         if (!response) {
             sendSseEvent(state.projectId, { message: "Security analysis did not return a valid structured response." })
@@ -103,7 +64,7 @@ export async function checkPromptNode(state: WorkflowState): Promise<Partial<Wor
         }
     }
     catch (error) {
-        console.error("Error during security analysis:", error);
+        logger.error({ err: error }, "Error during security analysis:");
         sendSseEvent(state.projectId, { message: "An error occurred during security analysis. The prompt could not be verified as safe." })
         return {
             analysis: {

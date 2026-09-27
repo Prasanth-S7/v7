@@ -16,7 +16,7 @@ export const run = async () => {
 
                     const data = JSON.parse(value!);
 
-                    console.log("Sending the msg to client...", projectId);
+                    console.log(value, projectId);
                     sendSse(projectId, data);
                     break;
                 }

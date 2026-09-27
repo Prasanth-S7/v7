@@ -2,32 +2,35 @@ import { consumer } from "..";
 import { Topics } from "@v7/kafka/topics";
 import { workflow } from "@/agent/graph";
 import { checkpointer } from "@/agent/graph";
+import { logger } from "..";
 
 export const run = async () => {
-    console.log("Agent service consumer started listening.......")
+    logger.info("Agent service consumer started...")
     await consumer.run({
         eachMessage: async ({ topic, message }) => {
             try {
-                console.log("Received a message", topic, message)
                 switch (topic) {
                     case Topics.PROMPT: {
                         const projectId = message.key?.toString();
                         if (!projectId) {
-                            console.log("Project id is missing..");
+                            logger.warn("Project id is missing..");
                             return;
                         }
                         const value = message.value?.toString();
                         if (!value) {
-                            console.log("Message value is missing..");
+                            logger.warn("Message value is missing..");
                             return;
                         }
                         const { prompt } = JSON.parse(value);
+
+                        logger.info({ prompt }, "Received prompt:");
+
                         if (!prompt) {
-                            console.log("Prompt is missing..");
+                            logger.warn("Prompt is missing..");
                             return;
                         }
 
-                        console.log("Invoking workflow....")
+                        logger.info("Invoking workflow....");
 
                         await workflow.invoke({
                             projectId,
@@ -44,12 +47,12 @@ export const run = async () => {
                             },
                         });
 
-                        console.dir(checkpoint, { depth: null });
+                        // console.dir(checkpoint, { depth: null });
                         break;
                     }
                 }
             } catch (error) {
-                console.error("Error processing message:", error);
+                logger.error({ err: error }, "Error processing message:");
             }
         },
     });

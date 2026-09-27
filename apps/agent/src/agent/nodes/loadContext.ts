@@ -3,6 +3,7 @@ import fs from "fs/promises";
 import path from "path";
 import { resolveWorkspaceRoot } from "@v7/env/sharedDir";
 import { sendSseEvent } from "@/utils/sse";
+import { logger } from "@/index";
 
 type ListFilesOptions = {
     ignore?: string[];
@@ -54,8 +55,7 @@ export async function listFilesRecursive(
 
 export async function loadContextNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
 
-    console.log("Reaches loadContext Node")
-    console.log(state.projectContext)
+    logger.info({ projectContext: state.projectContext }, "Reaches loadContext Node");
     const rootPath = resolveWorkspaceRoot(state.projectContext.rootPath);
     const fileTree = await listFilesRecursive(rootPath, { ignore: ["node_modules", "dist", ".git"] });
 
@@ -65,11 +65,11 @@ export async function loadContextNode(state: WorkflowState): Promise<Partial<Wor
 
     const isProjectInit = fileTree.length > 0 && Object.keys(dependencies).length > 0;
 
-    console.log("Loaded project context:", {
+    logger.info({
         rootPath,
         fileTreeCount: fileTree.length,
         dependenciesCount: Object.keys(dependencies).length,
-    });
+    }, "Loaded project context:");
 
     sendSseEvent(state.projectId, { message: "Project context loaded successfully" })
 

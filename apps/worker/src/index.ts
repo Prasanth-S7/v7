@@ -1,12 +1,13 @@
 import { createKafkaClient } from "@v7/kafka";
 import { Topics } from "@v7/kafka/topics";
 import type { EachMessagePayload } from "kafkajs";
-import { mkdir, rm, writeFile } from "fs/promises";
+import { mkdir, rm, writeFile, readdir, readFile } from "fs/promises";
 import path from "path";
 import {
     S3Client,
     ListObjectsV2Command,
     GetObjectCommand,
+    PutObjectCommand,
 } from "@aws-sdk/client-s3";
 import { env } from "@v7/env/shared";
 import { getProjectDir } from "@v7/env/sharedDir";
@@ -24,6 +25,9 @@ await consumer.connect();
 
 await consumer.subscribe({
     topic: Topics.CREATE_PROJECT,
+});
+await consumer.subscribe({
+    topic: Topics.UPLOAD_PROJECT,
 });
 
 const s3 = new S3Client({
@@ -88,6 +92,32 @@ async function downloadS3Folder(bucket: string, prefix: string, targetDir: strin
     } while (continuationToken);
 }
 
+async function uploadS3Folder(bucket: string, prefix: string, sourceDir: string) {
+    const normalizedPrefix = normalizePrefix(prefix);
+
+    async function uploadRecursive(currentDir: string, currentPrefix: string) {
+        const entries = await readdir(currentDir, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const fullPath = path.join(currentDir, entry.name);
+            const s3Key = `${currentPrefix}${entry.name}`;
+
+            if (entry.isDirectory()) {
+                await uploadRecursive(fullPath, `${s3Key}/`);
+            } else {
+                const fileContent = await readFile(fullPath);
+                await s3.send(new PutObjectCommand({
+                    Bucket: bucket,
+                    Key: s3Key,
+                    Body: fileContent,
+                }));
+            }
+        }
+    }
+
+    await uploadRecursive(sourceDir, normalizedPrefix);
+}
+
 const handleProjectCreate = async ({ topic, message }: EachMessagePayload) => {
     if (!message.value) {
         throw new Error("Received empty project creation message");
@@ -120,6 +150,27 @@ const handleProjectCreate = async ({ topic, message }: EachMessagePayload) => {
     console.log("Project created successfully:", { projectId, targetDir });
 };
 
+const handleUploadProject = async ({ topic, message }: EachMessagePayload) => {
+    if (!message.key) {
+        throw new Error("Project Id is missing");
+    }
+
+    const projectId = message.key.toString();
+
+    const targetDir = getProjectDir(projectId);
+
+    await uploadS3Folder(env.TEMPLATE_BUCKET_NAME, `projects/${projectId}`, targetDir);
+
+    console.log("Project uploaded successfully:", { projectId, targetDir });
+};
+
 await consumer.run({
-    eachMessage: handleProjectCreate,
+    eachMessage: async (payload: EachMessagePayload) => {
+        if (payload.topic === Topics.CREATE_PROJECT) {
+            await handleProjectCreate(payload);
+        }
+        if (payload.topic === Topics.UPLOAD_PROJECT) {
+            await handleUploadProject(payload);
+        }
+    },
 });

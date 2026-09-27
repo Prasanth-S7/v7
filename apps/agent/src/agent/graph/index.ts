@@ -6,7 +6,7 @@ import {
 } from "@langchain/langgraph";
 
 import { z } from "zod";
-import { buildNode } from "../nodes/build";
+import { uploadNode } from "../nodes/upload";
 import { enhancePromptNode } from "../nodes/enhancePrompt";
 import { executeNode } from "../nodes/execute";
 import { planNode } from "../nodes/plan";
@@ -14,6 +14,7 @@ import { checkPromptNode } from "../nodes/checkPrompt";
 import { initProjectNode } from "../nodes/initProject";
 import { loadContextNode } from "../nodes/loadContext";
 import { MemorySaver } from "@langchain/langgraph";
+import { logger } from "@/index";
 
 export const checkpointer = new MemorySaver();
 
@@ -25,6 +26,7 @@ const graphStateSchema = new StateSchema({
     initProject: z.boolean().describe("Indicates if the project has been initialized"),
     enhancedPrompt: z.string().describe("The enhanced prompt after processing"),
     buildStatus: z.enum(["pending", "processing", "completed", "failed"]).describe("The status of the build process"),
+    uploadStatus: z.enum(["pending", "processing", "completed", "failed"]).describe("The status of the upload process"),
     fixAttempts: z.number().describe("The number of attempts made to fix"),
     toolCalls: z.array(z.any()).describe("List of tool calls made during execution"),
     changeSummary: z.object({
@@ -54,7 +56,7 @@ const graphStateSchema = new StateSchema({
 export type WorkflowState = typeof graphStateSchema.State;
 
 const routeAfterCheck = (state: WorkflowState) => {
-    if(!state.analysis?.isSafe) {
+    if (!state.analysis?.isSafe) {
         return "end";
     }
     return "enhancePrompt"
@@ -69,7 +71,7 @@ const routeAfterLoadContext = (state: WorkflowState) => {
         return "initProjectNode";
     }
 
-    console.log("Plan execution result: ", state.planExecuted);
+    logger.info({ planExecuted: state.planExecuted }, "Plan execution result:");
 
     if (state.projectContext.lastError) {
         if (state.fixAttempts >= MAX_FIX_ATTEMPTS) return "end";
@@ -85,47 +87,56 @@ const routeAfterLoadContext = (state: WorkflowState) => {
 
 
 const routeAfterEnhancePrompt = (state: WorkflowState) => {
+    logger.info({ initProject: state.initProject }, "Project initialization status:");
+    if (state.initProject) {
+        logger.info("Project already initialized, proceeding to load context");
+    }
+    else {
+        logger.info("Project not initialized. Skipping load context and proceeding to initialize project");
+    }
+
     return state.initProject
         ? "loadContext"
         : "initProjectNode";
 };
 
 const graph = new StateGraph(graphStateSchema)
-.addNode("checkPrompt", checkPromptNode)
-.addNode("enhancePrompt", enhancePromptNode)
-.addNode("initProjectNode", initProjectNode)
-.addNode("loadContext" , loadContextNode)
-.addNode("plan", planNode)
-.addNode("execute", executeNode)
-.addNode("build", buildNode)
+    .addNode("checkPrompt", checkPromptNode)
+    .addNode("enhancePrompt", enhancePromptNode)
+    .addNode("initProjectNode", initProjectNode)
+    .addNode("loadContext", loadContextNode)
+    // .addNode("plan", planNode)
+    // .addNode("execute", executeNode)
+    // .addNode("upload", uploadNode)
 
-.addEdge(START, "checkPrompt")
-.addConditionalEdges("checkPrompt", routeAfterCheck, {
-    enhancePrompt: "enhancePrompt",
-    end: END,
-})
+    .addEdge(START, "checkPrompt")
+    .addConditionalEdges("checkPrompt", routeAfterCheck, {
+        enhancePrompt: "enhancePrompt",
+        end: END,
+    })
 
 
-.addConditionalEdges(
-    "enhancePrompt",
-    routeAfterEnhancePrompt,
-    {
-        loadContext: "loadContext",
-        initProjectNode: "initProjectNode",
-    }
-)
+    .addConditionalEdges(
+        "enhancePrompt",
+        routeAfterEnhancePrompt,
+        {
+            loadContext: "loadContext",
+            initProjectNode: "initProjectNode",
+        }
+    )
 
-.addEdge("initProjectNode", "execute")
-.addEdge("execute", "loadContext")
+    // .addEdge("initProjectNode", "execute")
+    // .addEdge("execute", "loadContext")
 
-.addConditionalEdges("loadContext", routeAfterLoadContext, {
-    initProjectNode: "initProjectNode",
-    plan: "plan",
-    build: "build",
-    end: END,
-})
-.addEdge("plan", "execute")
-.addEdge("build", END)
+    // .addConditionalEdges("loadContext", routeAfterLoadContext, {
+    //     initProjectNode: "initProjectNode",
+    //     plan: "plan",
+    //     upload: "upload",
+    //     end: END,
+    // })
+    // .addEdge("plan", "execute")
+    // .addEdge("upload", END)
+    .addEdge("enhancePrompt", END)
 
 
 export const workflow = graph.compile({
