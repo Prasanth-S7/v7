@@ -1,7 +1,7 @@
 import { type WorkflowState } from "../graph";
 import fs from "fs/promises";
 import path from "path";
-import { resolveWorkspaceRoot } from "@v7/env/sharedDir";
+import { getProjectDir, resolveWorkspaceRoot } from "@v7/env/sharedDir";
 import { sendSseEvent } from "@/utils/sse";
 import { logger } from "@/index";
 
@@ -56,29 +56,51 @@ export async function listFilesRecursive(
 export async function loadContextNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
 
     logger.info({ projectContext: state.projectContext }, "Reaches loadContext Node");
-    const rootPath = resolveWorkspaceRoot(state.projectContext.rootPath);
+
+    // On the very first graph invocation for a project, state.projectContext hasn't
+    // been seeded by anything yet (there is no dedicated init node anymore) — derive
+    // the root path straight from the project id and default the stack here instead.
+    const rootPath = state.projectContext?.rootPath
+        ? resolveWorkspaceRoot(state.projectContext.rootPath)
+        : getProjectDir(state.projectId);
+
     const fileTree = await listFilesRecursive(rootPath, { ignore: ["node_modules", "dist", ".git"] });
 
     const pkgJsonPath = path.join(rootPath, "package.json");
-    const pkgJson = JSON.parse(await fs.readFile(pkgJsonPath, "utf-8"));
-    const dependencies = { ...pkgJson.dependencies, ...pkgJson.devDependencies };
+    let dependencies: Record<string, string> = {};
+    try {
+        const pkgJson = JSON.parse(await fs.readFile(pkgJsonPath, "utf-8"));
+        dependencies = { ...pkgJson.dependencies, ...pkgJson.devDependencies };
+    } catch (err) {
+        logger.warn({ err, pkgJsonPath }, "Could not read package.json, assuming none exists yet");
+    }
 
-    const isProjectInit = fileTree.length > 0 && Object.keys(dependencies).length > 0;
+    const dependenciesInstalled = await fs
+        .stat(path.join(rootPath, "node_modules"))
+        .then((stat) => stat.isDirectory())
+        .catch(() => false);
 
     logger.info({
         rootPath,
         fileTreeCount: fileTree.length,
         dependenciesCount: Object.keys(dependencies).length,
+        dependenciesInstalled,
     }, "Loaded project context:");
 
     sendSseEvent(state.projectId, { message: "Project context loaded successfully" })
 
     return {
-        initProject: isProjectInit,
         projectContext: {
             ...state.projectContext,
+            stack: state.projectContext?.stack ?? {
+                bundler: "vite",
+                language: "typescript",
+                styling: "tailwindcss-v4",
+            },
+            rootPath,
             fileTree,
             dependencies,
+            dependenciesInstalled,
         },
     }
 }

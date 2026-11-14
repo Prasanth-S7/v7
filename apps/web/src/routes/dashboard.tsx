@@ -40,7 +40,6 @@ function RouteComponent() {
       try {
         const res = await axios.post(env.VITE_SERVER_URL + "/api/project/create");
         if (!res.data?.projectId) {
-          console.log("reaches here")
           toast.error("Project creation failed");
           return;
         }

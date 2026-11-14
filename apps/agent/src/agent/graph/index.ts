@@ -11,7 +11,6 @@ import { enhancePromptNode } from "../nodes/enhancePrompt";
 import { executeNode } from "../nodes/execute";
 import { planNode } from "../nodes/plan";
 import { checkPromptNode } from "../nodes/checkPrompt";
-import { initProjectNode } from "../nodes/initProject";
 import { loadContextNode } from "../nodes/loadContext";
 import { MemorySaver } from "@langchain/langgraph";
 import { logger } from "@/index";
@@ -23,12 +22,20 @@ const graphStateSchema = new StateSchema({
     projectId: z.string().describe("The Id of the project"),
     analysis: z.any().optional(),
     planExecuted: z.boolean().describe("Indicates if the plan has been executed"),
-    initProject: z.boolean().describe("Indicates if the project has been initialized"),
     enhancedPrompt: z.string().describe("The enhanced prompt after processing"),
     buildStatus: z.enum(["pending", "processing", "completed", "failed"]).describe("The status of the build process"),
     uploadStatus: z.enum(["pending", "processing", "completed", "failed"]).describe("The status of the upload process"),
     fixAttempts: z.number().describe("The number of attempts made to fix"),
     toolCalls: z.array(z.any()).describe("List of tool calls made during execution"),
+    toolResults: z.array(z.object({
+        tool: z.string(),
+        parameters: z.record(z.string(), z.any()).optional(),
+        result: z.string(),
+    })).default([]).describe(
+        "Output of the most recently executed tool calls (e.g. file contents from read_file, " +
+        "grep matches), fed back into the next plan turn so the model doesn't have to re-read " +
+        "the same files blindly and can see what it just did"
+    ),
     changeSummary: z.object({
         filesChanged: z.array(z.string()).describe("List of files changed"),
         linesAdded: z.number().describe("Number of lines added"),
@@ -47,6 +54,9 @@ const graphStateSchema = new StateSchema({
         dependencies: z.record(z.string(), z.string()).describe(
             "Parsed package.json dependencies + devDependencies, name -> version"
         ),
+        dependenciesInstalled: z.boolean().default(false).describe(
+            "Whether node_modules exists on disk for this project, used to tell the planning LLM whether it needs to run an install before anything else"
+        ),
         lastError: z.string().nullable().default(null).describe(
             "Most recent build/runtime error, if any, to give the fix loop grounding"
         ),
@@ -62,15 +72,9 @@ const routeAfterCheck = (state: WorkflowState) => {
     return "enhancePrompt"
 }
 
-const MAX_INIT_ATTEMPTS = 3;
 const MAX_FIX_ATTEMPTS = 5;
 
 const routeAfterLoadContext = (state: WorkflowState) => {
-    if (!state.initProject) {
-        if (state.fixAttempts >= MAX_INIT_ATTEMPTS) return "end";
-        return "initProjectNode";
-    }
-
     logger.info({ planExecuted: state.planExecuted }, "Plan execution result:");
 
     if (state.projectContext.lastError) {
@@ -78,36 +82,24 @@ const routeAfterLoadContext = (state: WorkflowState) => {
         return "plan";
     }
 
+    // planExecuted is only true once the model responds with zero tool calls,
+    // i.e. it has explicitly declared the task complete. Otherwise, even if the
+    // last batch of tool calls succeeded (e.g. a batch of read_file calls), we
+    // loop back to plan so the model can act on what it just learned.
     if (!state.planExecuted) {
         return "plan";
     }
 
-    return "build";
-};
-
-
-const routeAfterEnhancePrompt = (state: WorkflowState) => {
-    logger.info({ initProject: state.initProject }, "Project initialization status:");
-    if (state.initProject) {
-        logger.info("Project already initialized, proceeding to load context");
-    }
-    else {
-        logger.info("Project not initialized. Skipping load context and proceeding to initialize project");
-    }
-
-    return state.initProject
-        ? "loadContext"
-        : "initProjectNode";
+    return "upload";
 };
 
 const graph = new StateGraph(graphStateSchema)
     .addNode("checkPrompt", checkPromptNode)
     .addNode("enhancePrompt", enhancePromptNode)
-    .addNode("initProjectNode", initProjectNode)
     .addNode("loadContext", loadContextNode)
-    // .addNode("plan", planNode)
-    // .addNode("execute", executeNode)
-    // .addNode("upload", uploadNode)
+    .addNode("plan", planNode)
+    .addNode("execute", executeNode)
+    .addNode("upload", uploadNode)
 
     .addEdge(START, "checkPrompt")
     .addConditionalEdges("checkPrompt", routeAfterCheck, {
@@ -115,28 +107,16 @@ const graph = new StateGraph(graphStateSchema)
         end: END,
     })
 
+    .addEdge("enhancePrompt", "loadContext")
 
-    .addConditionalEdges(
-        "enhancePrompt",
-        routeAfterEnhancePrompt,
-        {
-            loadContext: "loadContext",
-            initProjectNode: "initProjectNode",
-        }
-    )
-
-    // .addEdge("initProjectNode", "execute")
-    // .addEdge("execute", "loadContext")
-
-    // .addConditionalEdges("loadContext", routeAfterLoadContext, {
-    //     initProjectNode: "initProjectNode",
-    //     plan: "plan",
-    //     upload: "upload",
-    //     end: END,
-    // })
-    // .addEdge("plan", "execute")
-    // .addEdge("upload", END)
-    .addEdge("enhancePrompt", END)
+    .addConditionalEdges("loadContext", routeAfterLoadContext, {
+        plan: "plan",
+        upload: "upload",
+        end: END,
+    })
+    .addEdge("plan", "execute")
+    .addEdge("execute", "loadContext")
+    .addEdge("upload", END)
 
 
 export const workflow = graph.compile({

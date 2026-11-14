@@ -44,59 +44,87 @@ export const SYSTEM_PROMPTS = {
 
       Output ONLY the enhanced feature description as plain text. No markdown, no headers, no code fences.
       `,
-  TOOL_LIST: `
-        Available tools:
-
-        1. read_file
-        - Description: Read the contents of a file given its path
-        - Parameters:
-          - filePath: string
-
-        2. write_file
-        - Description: Write content to a file given its path
-        - Parameters:
-          - filePath: string
-          - content: string
-
-        3. execute_command
-        - Description: Execute a shell command and return stdout, stderr, and exit status
-        - Parameters:
-          - command: string
-          - args: string[]
-          - cwd: string
-          - timeoutMs: number
-    `,
-
-  PROJECT_INIT_TEMPLATE: `
-      You are setting up a project that has already been initialized in the target directory.
-      All project files and configurations are already in place.
-
-      Requirements:
-      - The ONLY action required is to install the project dependencies.
-      - Use "pnpm" as the package manager.
-      - Do not scaffold, create, or modify any files.
-      - Do not run any other commands besides installing dependencies.
-
-      Return ONLY a JSON object with an ordered list of tool calls to run.
-
-      Use this shape:
-      {
-        "executeCommands": [
-          {
-            "command": "pnpm",
-            "args": ["install"],
-            "cwd": "/absolute/path/to/the/shared/workspace/my-app",
-            "reason": "Install project dependencies"
-          }
-        ]
-      }
-
-      Rules:
-      - Give the output as a single JSON object with an "executeCommands" array.
-      - ONLY include the "pnpm install" command. Do not include any other commands.
-      - NEVER try to scaffold a new project or initialize files.
-      - NEVER try to start a dev server or run the app.
-      - Put the project root in the cwd field for shell commands.
-      - Only include steps that should actually be executed.
-  `
 }
+
+type PlanPromptParams = {
+  projectRoot: string;
+  stack: unknown;
+  dependenciesInstalled: boolean;
+  dependencies: Record<string, string>;
+  fileTree: string[];
+  lastError?: string | null;
+  enhancedPrompt: string;
+  prompt: string;
+};
+
+export function buildPlanPrompt({
+  projectRoot,
+  stack,
+  dependenciesInstalled,
+  dependencies,
+  fileTree,
+  lastError,
+  enhancedPrompt,
+  prompt,
+}: PlanPromptParams): string {
+  const isFixingError = !!lastError;
+  const needsInstall = !dependenciesInstalled;
+
+  return `
+
+## Project Context
+
+The project has ALREADY been scaffolded on disk. Do NOT scaffold, re-run "npm create vite",
+"tailwindcss init", or any project setup commands. This project already exists on disk.
+
+Project Directory: ${projectRoot}
+Stack: ${JSON.stringify(stack)}
+Dependencies installed (node_modules present): ${dependenciesInstalled}
+Declared dependencies (package.json): ${JSON.stringify(dependencies, null, 2)}
+
+Current file tree:
+${fileTree.map((f) => `- ${f}`).join("\n")}
+
+## Your Task
+
+${needsInstall
+      ? `Dependencies have NOT been installed yet (node_modules is missing). Your FIRST and ONLY
+tool call this turn must be an execute_command call to install dependencies (e.g. "pnpm install"
+with no args, run from the project root). Do not request any other tool calls this turn — you
+will get another planning turn afterward, with node_modules confirmed present, to continue with
+the user's actual request below.
+
+User's request (to address on a LATER turn, once dependencies are installed): ${enhancedPrompt}\n\nOriginal prompt: ${prompt}`
+      : isFixingError
+        ? `The previous attempt failed with this error:\n\n${lastError}\n\nInvestigate the relevant file(s) using read_file, diagnose the root cause, then fix it using edit_file or write_file. Do not repeat the exact same change that caused this failure.`
+        : `User's request: ${enhancedPrompt}\n\nOriginal prompt: ${prompt}`
+    }
+
+## How to work
+
+- You do NOT have the contents of any file yet — the file tree above only shows paths.
+  Use read_file to see a file's current contents before deciding how to edit it. Never
+  guess or fabricate what a file currently contains.
+- This is a single planning turn: every tool call you request now will be executed
+  for you AFTERWARDS by a separate execution step, and you will NOT see the results
+  in this turn. If something needs investigation before it can be safely edited
+  (e.g. you need to read a file before editing it), request ONLY the read_file call(s)
+  this turn and stop — you will get another planning turn afterward (with a refreshed
+  file tree and, if something failed, the error message) to make the follow-up edit.
+- Because of this, prefer requesting a small, focused batch of tool calls per turn
+  rather than a long speculative chain of edits you cannot verify yet.
+- Prefer replace_in_file or update_file (targeted changes) over write_file for small
+  changes to existing files, to avoid accidentally dropping unrelated code.
+- Use write_file only for brand new files, or when a file needs to be substantially
+  rewritten.
+- Use execute_command only for things that genuinely need a shell command (e.g.
+  installing a new npm package). Never use it for project scaffolding.
+- Every file you write must contain complete, real, working code. Never use
+  placeholder comments like "// your code here" or "// implementation goes here".
+- When the request is already fully satisfied and no more tool calls are needed,
+  respond with a brief plain-text summary instead of calling any tools.
+
+Begin.
+    `.trim();
+}
+
