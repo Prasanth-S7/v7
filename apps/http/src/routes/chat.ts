@@ -2,10 +2,11 @@ import { Router } from "express";
 import prisma from "@v7/db";
 import { producer } from "..";
 import { Topics } from "@v7/kafka/topics";
+import { requireAuth } from "../middleware/requireAuth";
 
 export const chat: ReturnType<typeof Router> = Router();
 
-chat.post("/:projectId", async (req, res) => {
+chat.post<{ projectId: string }>("/:projectId", requireAuth, async (req, res) => {
     try {
         const { prompt } = req.body;
         if (!prompt) {
@@ -16,7 +17,8 @@ chat.post("/:projectId", async (req, res) => {
         const projectId = req.params.projectId;
         const project = await prisma.project.findFirst({
             where: {
-                id: projectId
+                id: projectId,
+                userId: req.userId,
             }
         })
         if (!project) {

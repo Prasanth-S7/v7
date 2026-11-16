@@ -5,6 +5,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { env } from "@v7/env/web";
 import LogoutButton from "@/components/logout-button";
+import ProjectsSidebar from "@/components/projects-sidebar";
 import { useSSE } from "@/hooks/useSSE";
 
 const TITLE = `
@@ -38,7 +39,11 @@ function RouteComponent() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       try {
-        const res = await axios.post(env.VITE_SERVER_URL + "/api/project/create");
+        const res = await axios.post(
+          env.VITE_SERVER_URL + "/api/project/create",
+          {},
+          { withCredentials: true }
+        );
         if (!res.data?.projectId) {
           toast.error("Project creation failed");
           return;
@@ -53,6 +58,7 @@ function RouteComponent() {
 
   return (
     <div className="flex h-screen bg-black">
+      <ProjectsSidebar />
       <div className="absolute top-4 right-4">
         <LogoutButton />
       </div>

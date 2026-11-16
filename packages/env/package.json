@@ -10,7 +10,8 @@
     "./shared": "./src/shared.ts",
     "./sharedDir": "./src/sharedDir.ts",
     "./sse": "./src/sse.ts",
-    "./kafka": "./src/kafka.ts"
+    "./kafka": "./src/kafka.ts",
+    "./llm": "./src/llm.ts"
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.1",

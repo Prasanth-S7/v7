@@ -10,6 +10,7 @@ import {
 } from "@v7/ui/components/resizable";
 import { Message, MessageContent, MessageGroup } from "@v7/ui/components/message";
 import { useSSE } from "@/hooks/useSSE";
+import ProjectsSidebar from "@/components/projects-sidebar";
 
 export const Route = createFileRoute("/projects/$projectId")({
   component: ProjectComponent,
@@ -27,9 +28,11 @@ function ProjectComponent() {
   const sendMessage = async (text: string) => {
     setSending(true);
     try {
-      const res = await axios.post(env.VITE_SERVER_URL + "/api/chat/" + projectId, {
-        prompt: text,
-      });
+      const res = await axios.post(
+        env.VITE_SERVER_URL + "/api/chat/" + projectId,
+        { prompt: text },
+        { withCredentials: true }
+      );
       if (!res.data.msg) {
         toast.error("Error while sending prompt. Please try again later!")
       }
@@ -62,7 +65,8 @@ function ProjectComponent() {
 
   return (
     <div className="flex h-screen bg-black">
-      <ResizablePanelGroup orientation="horizontal" className="h-full">
+      <ProjectsSidebar />
+      <ResizablePanelGroup orientation="horizontal" className="h-full flex-1">
         <ResizablePanel defaultSize={40} minSize={30}>
           <div className="flex h-full flex-col">
             <div className="flex-1 overflow-y-auto p-4 space-y-4">

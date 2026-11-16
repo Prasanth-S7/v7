@@ -3,7 +3,7 @@ import { Topics } from "@v7/kafka/topics";
 import prisma from "@v7/db";
 
 export const run = async () => {
-    console.log("Run function triggerssssssss")
+    console.log("Starting HTTP kafka consumer...")
     await consumer.run({
         eachMessage: async ({ topic, partition, message }) => {
             const value = message.value?.toString();
