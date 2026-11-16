@@ -59,6 +59,16 @@ services:
     env_file:
       - ./apps/sse/.env.production
 
+  db:
+    image: postgres:latest
+    container_name: v7-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: v7
+    ports:
+      - "5432:5432"
+
   # shared:
   #   build:
   #     context: .
