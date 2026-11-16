@@ -102,8 +102,8 @@ export function executeCommand(projectRoot: string) {
             name: "execute_command",
             description: "Run a shell command in the project directory (e.g. installing a package). Never use for project scaffolding.",
             schema: z.object({
-                command: z.string(),
-                args: z.array(z.string()).optional().default([]),
+                command: z.string().describe("Executable name only, without arguments. Example: 'pnpm', 'npm', 'git'. Never include spaces or arguments."),
+                args: z.array(z.string()).optional().default([]).describe("Arguments passed separately to the executable. Example: for 'pnpm install', use command='pnpm' and args=['install']."),
             }),
         }
     );
