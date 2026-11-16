@@ -59,7 +59,7 @@ ${recentToolResultsSection}
 ${needsInstall
       ? `Dependencies have NOT been installed yet (node_modules is missing). Your FIRST and ONLY
 tool call this turn must be an execute_command call to install dependencies (e.g. "pnpm install"
-with no args, run from the project root). Do not request any other tool calls this turn — you
+with args as install, run from the project root). Do not request any other tool calls this turn — you
 will get another planning turn afterward, with node_modules confirmed present, to continue with
 the user's actual request below.
 
