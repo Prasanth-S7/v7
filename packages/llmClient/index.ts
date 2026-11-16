@@ -9,7 +9,7 @@ import {
   grepSearch,
   executeCommand,
 } from "./tools";
-import { env } from "@v7/env/server";
+import { env } from "@v7/env/llm";
 
 export const model = new ChatOpenRouter(
   {
