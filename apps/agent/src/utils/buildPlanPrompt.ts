@@ -1,45 +1,48 @@
 type PlanPromptParams = {
-  projectRoot: string;
-  stack: unknown;
-  dependenciesInstalled: boolean;
-  dependencies: Record<string, string>;
-  fileTree: string[];
-  lastError?: string | null;
-  enhancedPrompt: string;
-  prompt: string;
-  recentToolResults?: { tool: string; parameters?: Record<string, unknown>; result: string }[];
+	projectRoot: string;
+	stack: unknown;
+	dependenciesInstalled: boolean;
+	dependencies: Record<string, string>;
+	fileTree: string[];
+	lastError?: string | null;
+	enhancedPrompt: string;
+	prompt: string;
+	recentToolResults?: { tool: string; parameters?: Record<string, unknown>; result: string }[];
 };
 
 export function buildPlanPrompt({
-  projectRoot,
-  stack,
-  dependenciesInstalled,
-  dependencies,
-  fileTree,
-  lastError,
-  enhancedPrompt,
-  prompt,
-  recentToolResults = [],
+	projectRoot,
+	stack,
+	dependenciesInstalled,
+	dependencies,
+	fileTree,
+	lastError,
+	enhancedPrompt,
+	prompt,
+	recentToolResults = [],
 }: PlanPromptParams): string {
-  const isFixingError = !!lastError;
-  const needsInstall = !dependenciesInstalled;
+	const isFixingError = !!lastError;
+	const needsInstall = !dependenciesInstalled;
 
-  const recentToolResultsSection = recentToolResults.length > 0
-    ? `
+	const recentToolResultsSection =
+		recentToolResults.length > 0
+			? `
 ## Results From Your Last Tool Calls
 
 You already requested these tool calls on the previous turn. Here are their results —
 use this information directly instead of re-requesting the same read_file/grep_search
 calls again:
 
-${recentToolResults.map((r, i) => {
-      const paramsSummary = r.parameters ? JSON.stringify(r.parameters) : "";
-      return `### ${i + 1}. ${r.tool}${paramsSummary ? ` ${paramsSummary}` : ""}\n\n${r.result}`;
-    }).join("\n\n")}
+${recentToolResults
+	.map((r, i) => {
+		const paramsSummary = r.parameters ? JSON.stringify(r.parameters) : "";
+		return `### ${i + 1}. ${r.tool}${paramsSummary ? ` ${paramsSummary}` : ""}\n\n${r.result}`;
+	})
+	.join("\n\n")}
 `
-    : "";
+			: "";
 
-  return `
+	return `
 
 ## Project Context
 
@@ -56,18 +59,19 @@ ${fileTree.map((f) => `- ${f}`).join("\n")}
 ${recentToolResultsSection}
 ## Your Task
 
-${needsInstall
-      ? `Dependencies have NOT been installed yet (node_modules is missing). Your FIRST and ONLY
+${
+	needsInstall
+		? `Dependencies have NOT been installed yet (node_modules is missing). Your FIRST and ONLY
 tool call this turn must be an execute_command call to install dependencies (e.g. "pnpm install"
 with args as install, run from the project root). Do not request any other tool calls this turn — you
 will get another planning turn afterward, with node_modules confirmed present, to continue with
 the user's actual request below.
 
 User's request (to address on a LATER turn, once dependencies are installed): ${enhancedPrompt}\n\nOriginal prompt: ${prompt}`
-      : isFixingError
-        ? `The previous attempt failed with this error:\n\n${lastError}\n\nInvestigate the relevant file(s) using read_file, diagnose the root cause, then fix it using edit_file or write_file. Do not repeat the exact same change that caused this failure.`
-        : `User's request: ${enhancedPrompt}\n\nOriginal prompt: ${prompt}`
-    }
+		: isFixingError
+			? `The previous attempt failed with this error:\n\n${lastError}\n\nInvestigate the relevant file(s) using read_file, diagnose the root cause, then fix it using edit_file or write_file. Do not repeat the exact same change that caused this failure.`
+			: `User's request: ${enhancedPrompt}\n\nOriginal prompt: ${prompt}`
+}
 
 ## How to work
 

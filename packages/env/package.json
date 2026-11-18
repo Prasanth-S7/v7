@@ -1,26 +1,26 @@
 {
-  "name": "@v7/env",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "exports": {
-    "./server": "./src/server.ts",
-    "./web": "./src/web.ts",
-    "./http": "./src/http.ts",
-    "./shared": "./src/shared.ts",
-    "./sharedDir": "./src/sharedDir.ts",
-    "./sse": "./src/sse.ts",
-    "./kafka": "./src/kafka.ts",
-    "./llm": "./src/llm.ts"
-  },
-  "dependencies": {
-    "@t3-oss/env-core": "^0.13.1",
-    "dotenv": "catalog:",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "@types/bun": "catalog:",
-    "@v7/config": "workspace:*",
-    "typescript": "catalog:"
-  }
+	"name": "@v7/env",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		"./server": "./src/server.ts",
+		"./web": "./src/web.ts",
+		"./http": "./src/http.ts",
+		"./shared": "./src/shared.ts",
+		"./sharedDir": "./src/sharedDir.ts",
+		"./sse": "./src/sse.ts",
+		"./kafka": "./src/kafka.ts",
+		"./llm": "./src/llm.ts"
+	},
+	"dependencies": {
+		"@t3-oss/env-core": "^0.13.1",
+		"dotenv": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@types/bun": "catalog:",
+		"@v7/config": "workspace:*",
+		"typescript": "catalog:"
+	}
 }

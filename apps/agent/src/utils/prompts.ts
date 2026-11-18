@@ -1,6 +1,5 @@
 export const SYSTEM_PROMPTS = {
-
-  SECURITY_ANALYSIS_TEMPLATE: `
+	SECURITY_ANALYSIS_TEMPLATE: `
         You are a security analyzer for a web application builder. Analyze user prompts for security threats, malicious intent, or inappropriate content.
 
         Your task:
@@ -22,7 +21,7 @@ export const SYSTEM_PROMPTS = {
 
         CRITICAL: Return ONLY the JSON object, nothing else.
     `,
-  PROMPT_ENHANCEMENT_TEMPLATE: `
+	PROMPT_ENHANCEMENT_TEMPLATE: `
       You are a prompt enhancer for an AI website builder. The generated project ALWAYS uses this fixed stack — never mention, question, or substitute it:
       - Vite (React)
       - React with Javascript
@@ -44,33 +43,33 @@ export const SYSTEM_PROMPTS = {
 
       Output ONLY the enhanced feature description as plain text. No markdown, no headers, no code fences.
       `,
-}
+};
 
 type PlanPromptParams = {
-  projectRoot: string;
-  stack: unknown;
-  dependenciesInstalled: boolean;
-  dependencies: Record<string, string>;
-  fileTree: string[];
-  lastError?: string | null;
-  enhancedPrompt: string;
-  prompt: string;
+	projectRoot: string;
+	stack: unknown;
+	dependenciesInstalled: boolean;
+	dependencies: Record<string, string>;
+	fileTree: string[];
+	lastError?: string | null;
+	enhancedPrompt: string;
+	prompt: string;
 };
 
 export function buildPlanPrompt({
-  projectRoot,
-  stack,
-  dependenciesInstalled,
-  dependencies,
-  fileTree,
-  lastError,
-  enhancedPrompt,
-  prompt,
+	projectRoot,
+	stack,
+	dependenciesInstalled,
+	dependencies,
+	fileTree,
+	lastError,
+	enhancedPrompt,
+	prompt,
 }: PlanPromptParams): string {
-  const isFixingError = !!lastError;
-  const needsInstall = !dependenciesInstalled;
+	const isFixingError = !!lastError;
+	const needsInstall = !dependenciesInstalled;
 
-  return `
+	return `
 
 ## Project Context
 
@@ -87,18 +86,19 @@ ${fileTree.map((f) => `- ${f}`).join("\n")}
 
 ## Your Task
 
-${needsInstall
-      ? `Dependencies have NOT been installed yet (node_modules is missing). Your FIRST and ONLY
+${
+	needsInstall
+		? `Dependencies have NOT been installed yet (node_modules is missing). Your FIRST and ONLY
 tool call this turn must be an execute_command call to install dependencies (e.g. "pnpm install"
 with no args, run from the project root). Do not request any other tool calls this turn — you
 will get another planning turn afterward, with node_modules confirmed present, to continue with
 the user's actual request below.
 
 User's request (to address on a LATER turn, once dependencies are installed): ${enhancedPrompt}\n\nOriginal prompt: ${prompt}`
-      : isFixingError
-        ? `The previous attempt failed with this error:\n\n${lastError}\n\nInvestigate the relevant file(s) using read_file, diagnose the root cause, then fix it using edit_file or write_file. Do not repeat the exact same change that caused this failure.`
-        : `User's request: ${enhancedPrompt}\n\nOriginal prompt: ${prompt}`
-    }
+		: isFixingError
+			? `The previous attempt failed with this error:\n\n${lastError}\n\nInvestigate the relevant file(s) using read_file, diagnose the root cause, then fix it using edit_file or write_file. Do not repeat the exact same change that caused this failure.`
+			: `User's request: ${enhancedPrompt}\n\nOriginal prompt: ${prompt}`
+}
 
 ## How to work
 
@@ -127,4 +127,3 @@ User's request (to address on a LATER turn, once dependencies are installed): ${
 Begin.
     `.trim();
 }
-

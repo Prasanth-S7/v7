@@ -69,13 +69,13 @@ services:
     ports:
       - "5432:5432"
 
-  # shared:
-  #   build:
-  #     context: .
-  #     dockerfile: apps/shared/Dockerfile
-  #   image: v7-shared:latest
-  #   container_name: v7-shared
-  #   depends_on:
-  #     - broker
-  #   env_file:
-  #     - ./apps/shared/.env.production
+      # shared:
+      #   build:
+      #     context: .
+      #     dockerfile: apps/shared/Dockerfile
+      #   image: v7-shared:latest
+      #   container_name: v7-shared
+      #   depends_on:
+      #     - broker
+      #   env_file:
+      #     - ./apps/shared/.env.production

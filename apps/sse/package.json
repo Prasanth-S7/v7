@@ -1,27 +1,27 @@
 {
-  "name": "sse",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "build": "tsdown",
-    "check-types": "tsc -b",
-    "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
-    "dev": "bun run --hot src/index.ts",
-    "start": "bun run dist/index.mjs"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "@types/express": "^5.0.6"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@types/cors": "^2.8.19",
-    "@v7/env": "workspace:*",
-    "@v7/kafka": "workspace:*",
-    "cors": "^2.8.6",
-    "express": "^5.2.1"
-  }
+	"name": "sse",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"build": "tsdown",
+		"check-types": "tsc -b",
+		"compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
+		"dev": "bun run --hot src/index.ts",
+		"start": "bun run dist/index.mjs"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"@types/express": "^5.0.6"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@types/cors": "^2.8.19",
+		"@v7/env": "workspace:*",
+		"@v7/kafka": "workspace:*",
+		"cors": "^2.8.6",
+		"express": "^5.2.1"
+	}
 }

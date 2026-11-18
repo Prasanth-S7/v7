@@ -18,12 +18,12 @@ spec:
         - name: postgres-container
           image: postgres:16
           env:
-          - name: postgres
-            value: "boards"
-          - name: POSTGRES_USER
-            value: "postgres"
-          - name: POSTGRES_PASSWORD
-            value: "postgres"
+            - name: postgres
+              value: "boards"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
 ---
 apiVersion: v1
 kind: Service
